@@ -187,7 +187,10 @@
       const patch={};for(const key of ['task','plan','legal','legalBasis'])if(Object.prototype.hasOwnProperty.call(q.patch,key)){
         const v=q.patch[key];if(!isStr(v,5000)||(key==='plan'||key==='legal')&&!validDate(v))throw new Error('Недопустимое поле очереди');patch[key]=v;
       }
-      return {opId:q.opId,caseId:q.caseId,client:String(q.client||''),kind:q.kind,createdAt:String(q.createdAt||''),status:q.status,baseVersion:Number(q.baseVersion||0),patch,event:q.event||null,note:String(q.note||''),conflictDetail:q.conflictDetail||null};
+      const restored={opId:q.opId,caseId:q.caseId,client:String(q.client||''),kind:q.kind,createdAt:String(q.createdAt||''),status:q.status,baseVersion:Number(q.baseVersion||0),patch,event:q.event||null,note:String(q.note||'')};
+      // Для pending-операции не добавляем новое поле: повтор того же opId должен совпадать с серверным JSON.
+      if(Object.prototype.hasOwnProperty.call(q,'conflictDetail'))restored.conflictDetail=q.conflictDetail||null;
+      return restored;
     });
     return {cases,events:eventRows,queue,focus:Array.isArray(doc.focus)?doc.focus.filter(id=>ids.has(id)):[],focusDate:typeof doc.focusDate==='string'?doc.focusDate:'',source:doc.source==='test-server-v02'?'test-server-v02':'demo'};
   }
