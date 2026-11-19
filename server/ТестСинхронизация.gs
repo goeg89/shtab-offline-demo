@@ -130,7 +130,9 @@ function testSyncRowsForClient_(sheet, width, limit, displayCols) {
   if (!rows.length) return rows;
   const shown = sheet.getRange(2, 1, rows.length, width).getDisplayValues();
   rows.forEach((row, i) => displayCols.forEach(col => {
-    row[col] = String(shown[i][col] || '');
+    row[col] = String(shown[i][col] || '').trim();
+    if (sheet.getName() === 'Events' && col === 3 && /^\d:\d{2}$/.test(row[col]))
+      row[col] = '0' + row[col];
   }));
   return rows;
 }
@@ -236,9 +238,16 @@ function testSyncApply_(raw) {
       : (eObj && !e)?'Заседание отсутствует на сервере'
       : (eObj && !eAlready && (e[6]===true || Number(e[7])!==eObj.expectedEventVersion))?'Заседание изменилось на сервере'
       : (nextExisting && !nAlready)?'ID следующего заседания уже используется':'';
-    if(reason) return testSyncFinish_(logs,rowNumber,'conflict',{
-      ok:false,status:'conflict',opId:op.opId,reason,
-      serverCase:testSyncCase_(c),serverEvent:e?testSyncEvent_(e):null});
+    if(reason) {
+      // В ответе о конфликте передаём те же отображаемые даты и время,
+      // что и в pull; иначе конфликт заседания снова содержит GMT 1899.
+      const displayCase=testSyncRowsForClient_(cases,10,500,[3,4])[cIndex];
+      const displayEvent=e?testSyncRowsForClient_(events,10,2000,[2,3])[eIndex]:null;
+      return testSyncFinish_(logs,rowNumber,'conflict',{
+        ok:false,status:'conflict',opId:op.opId,reason,
+        serverCase:testSyncCase_(displayCase),
+        serverEvent:displayEvent?testSyncEvent_(displayEvent):null});
+    }
     const now=new Date().toISOString();
     if(Object.keys(op.patch).length && !cAlready){
       for(const [key,index] of [['task',2],['plan',3],['legal',4],['legalBasis',5]])
