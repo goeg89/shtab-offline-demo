@@ -1,5 +1,5 @@
-/* Штаб Офлайн 0.2.1-pre. Кэшируются ТОЛЬКО локальные статические файлы. */
-const STATIC_CACHE = 'shtab-offline-sync-test-v0.2.1';
+/* Штаб Офлайн 0.2.2-pre. Кэшируются ТОЛЬКО локальные статические файлы. */
+const STATIC_CACHE = 'shtab-offline-sync-test-v0.2.2';
 const ASSETS = ['./', './index.html', './styles.css', './db.js', './app.js', './sync.js', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(STATIC_CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));
