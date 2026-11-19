@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1d4ed8">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Штаб Офлайн">
+  <meta name="description" content="Безопасный демонстрационный прототип офлайн-работы с делами">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <link rel="icon" href="./icons/icon-192.png" type="image/png">
+  <link rel="stylesheet" href="./styles.css">
+  <title>Штаб Офлайн — тест синхронизации</title>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-icon" aria-hidden="true">Ш</span><div><strong>Штаб <span>Офлайн</span></strong><small>Тест синхронизации · 0.2-pre</small></div></div>
+      <div class="status-row"><span class="status-pill" id="network-status">Проверка сети…</span><span class="status-pill pending" id="queue-chip">0 в очереди</span></div>
+    </header>
+
+    <section class="demo-banner" role="note">
+      <div class="demo-symbol" aria-hidden="true">!</div>
+      <div><strong>Демонстрация на вымышленных данных</strong>
+      <p>Используется только отдельная Google Sheets с <b>вымышленными делами</b>. Никогда не подключайте этот тестовый сервер к рабочей CRM и не вводите реальные данные клиентов.</p></div>
+    </section>
+
+    <section class="intro">
+      <div><div class="eyebrow">Ваши дела под рукой</div><h1>Работает даже без интернета</h1><p>Откройте дело, измените задачу или зафиксируйте результат заседания. Все действия сначала сохраняются локально; когда сеть восстановится, их можно отправить в тестовую таблицу.</p></div>
+      <button class="outline-action" id="export-top" type="button">Сохранить резервную копию</button>
+    </section>
+
+    <section class="stats" aria-label="Показатели">
+      <div class="stat"><small>В фокусе сегодня</small><strong id="stat-focus">0</strong></div>
+      <div class="stat"><small>Изменений в очереди</small><strong id="stat-queue">0</strong></div>
+      <div class="stat"><small>Предстоящих событий</small><strong id="stat-events">0</strong></div>
+    </section>
+
+    <nav class="tabs" aria-label="Разделы приложения">
+      <button class="tab active" data-tab="focus" type="button">Фокус на сегодня</button>
+      <button class="tab" data-tab="cases" type="button">Все дела</button>
+      <button class="tab" data-tab="queue" type="button">Очередь изменений</button>
+    </nav>
+
+    <main>
+      <section id="screen-focus" class="screen" aria-label="Фокус на сегодня">
+        <div class="section-heading"><div><h2>Фокус на сегодня</h2><p>Обязательные дела включаются автоматически. Остальные — по выбору.</p></div></div>
+        <div id="focus-list"></div>
+        <div class="section-heading extra-space"><div><h2>Требует внимания</h2><p>Добавляйте дела кнопкой «В фокус», когда решите заняться ими.</p></div></div>
+        <div id="attention-list"></div>
+      </section>
+
+      <section id="screen-cases" class="screen hidden" aria-label="Все дела">
+        <div class="section-heading"><div><h2>Все дела</h2><p>Данные сохранены на устройстве и обновляются из отдельной тестовой таблицы.</p></div></div>
+        <div class="search-box"><label for="case-search">Поиск по клиенту и задаче</label><input id="case-search" type="search" placeholder="Клиент или описание задачи" autocomplete="off"></div>
+        <div id="cases-list"></div>
+      </section>
+
+      <section id="screen-queue" class="screen hidden" aria-label="Очередь изменений">
+        <div class="section-heading"><div><h2>Локальная очередь</h2><p>Действия здесь сохраняются атомарно вместе с делами. Подтверждённые операции удаляются; при конфликте запись останавливается и остаётся здесь.</p></div></div>
+        <div class="sync-box">
+          <div class="sync-box-head"><strong>Синхронизация с тестовой Google Sheets</strong><span class="sync-badge">Только вымышленные данные</span></div>
+          <p>Тестовый сервер ограничен отдельной таблицей. Это НЕ рабочая CRM. Ключ вводится только на iPhone и не должен передаваться в чат или GitHub.</p>
+          <div class="field"><label for="sync-url">URL тестового Apps Script Web App (/exec)</label><input id="sync-url" type="url" placeholder="https://script.google.com/macros/s/.../exec" autocapitalize="off" autocomplete="off" spellcheck="false"></div>
+          <div class="field"><label for="sync-secret">Личный тестовый ключ из журнала setupTestSync()</label><input id="sync-secret" type="password" placeholder="64 символа" autocapitalize="off" autocomplete="off" spellcheck="false"></div>
+          <p class="tiny-hint">Для испытания ключ сохраняется в браузере этого устройства. Это НЕ модель безопасности для реальных клиентских дел.</p>
+          <div class="sync-box-actions">
+            <button id="sync-connect" class="button primary" type="button">Подключить тестовую базу</button>
+            <button id="sync-push" class="button secondary" type="button">Отправить очередь</button>
+            <button id="sync-pull" class="button secondary" type="button">Обновить с сервера</button>
+            <button id="sync-disconnect" class="button subtle" type="button">Забыть ключ</button>
+          </div>
+          <p id="sync-feedback" class="tiny-hint" role="status">Сервер пока не подключён.</p>
+          <div class="sync-box-actions"><button id="export-queue" class="button secondary" type="button">Экспортировать резервную копию</button><button id="request-persist" class="button subtle" type="button">Защитить локальное хранение</button></div>
+          <div id="storage-note" class="tiny-hint"></div>
+        </div>
+        <div id="queue-list"></div>
+        <details class="manage-details"><summary>Резервная копия и сброс демонстрации</summary><p>Можно восстановить ранее сохранённый JSON-архив этого прототипа. Восстановление полностью заменяет локальную демонстрационную базу.</p><div class="manage-row"><label class="import-label" for="import-file">Импортировать копию</label><input id="import-file" type="file" accept="application/json,.json" aria-label="Выбрать файл резервной копии"><button id="reset-demo" class="button danger" type="button">Сбросить демоданные</button></div></details>
+      </section>
+    </main>
+
+    <footer>Штаб Офлайн 0.1-pre · тестовый стенд · локальные изменения не равны синхронизации с Google Sheets</footer>
+  </div>
+
+  <dialog id="edit-dialog" aria-labelledby="dialog-title">
+    <form id="edit-form" method="dialog" novalidate>
+      <div class="dialog-header"><div><span class="eyebrow">Работа с делом</span><h2 id="dialog-title">Дело</h2></div><button class="close-button" id="close-dialog" type="button" aria-label="Закрыть">×</button></div>
+      <div class="dialog-body">
+        <div class="field"><label for="edit-task">Текущая узкая задача</label><textarea id="edit-task" rows="3" placeholder="Например: подготовить пояснения"></textarea></div>
+        <div class="two-cols"><div class="field"><label for="edit-plan">Плановый срок</label><input type="date" id="edit-plan"></div><div class="field"><label for="edit-legal">Юридический срок</label><input type="date" id="edit-legal"></div></div>
+        <div class="field"><label for="edit-legal-basis">Основание юридического срока</label><input id="edit-legal-basis" placeholder="Например: определение суда"></div>
+        <div class="event-area"><h3>Заседание / встреча</h3><p id="event-note">Выберите событие для сохранения результата.</p><div class="field"><label for="edit-event-select">Текущее событие</label><select id="edit-event-select"><option value="">Нет предстоящих событий</option></select></div><div id="event-edit-fields"><div class="field"><label for="edit-event-result">Результат заседания</label><textarea id="edit-event-result" rows="2" placeholder="Например: заседание отложено"></textarea></div><p class="form-hint">Следующее заседание создаётся одновременно с записью результата. Если следующая дата неизвестна, оставьте поля пустыми.</p><div class="two-cols"><div class="field"><label for="edit-next-date">Следующее заседание — дата</label><input id="edit-next-date" type="date"></div><div class="field"><label for="edit-next-time">Время</label><input id="edit-next-time" type="time"></div></div><div class="field"><label for="edit-next-place">Место</label><input id="edit-next-place" placeholder="Суд, адрес или онлайн"></div></div></div>
+        <div class="field"><label for="edit-note">Комментарий к изменению (необязательно)</label><textarea id="edit-note" rows="2" placeholder="Почему изменён срок или задача"></textarea></div>
+        <div id="form-error" class="form-error hidden" role="alert"></div>
+      </div>
+      <div class="dialog-actions"><button class="button subtle" id="cancel-dialog" type="button">Отмена</button><button class="button primary" id="save-dialog" type="submit">Сохранить на устройстве</button></div>
+    </form>
+  </dialog>
+  <div class="toast hidden" id="toast" role="status" aria-live="polite"></div>
+  <script src="./db.js" defer></script>
+  <script src="./sync.js" defer></script>
+  <script src="./app.js" defer></script>
+</body>
+</html>
