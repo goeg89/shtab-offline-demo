@@ -1,5 +1,5 @@
 /*
- * Штаб Офлайн SYNC 0.2-pre. Изолированная локальная база тестового сервера.
+ * Штаб Офлайн SYNC 0.2.3-pre. Изолированная локальная база тестового сервера.
  * Рабочая CRM НЕ подключается.
  */
 (function () {
@@ -142,9 +142,17 @@
 }
   function normalizeDemoTime(value) {
   if (typeof value !== 'string' || value === '' || /^\d{2}:\d{2}$/.test(value)) return value;
-  const m = /^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{1,2} \d{4} (\d{2}):(\d{2}):\d{2} GMT[+-]\d{4}\b/.exec(value);
-  if (!m || Number(m[1]) > 23 || Number(m[2]) > 59) return value;
-  return `${m[1]}:${m[2]}`;
+  // Старые копии 0.2.1/0.2.2 содержат Date.toString() для ячеек TIME.
+  // На 30.12.1899 у некоторых часовых поясов историческое смещение
+  // (например GMT+0402), поэтому локальные 14:32:33 НЕ равны времени
+  // 10:30, показанному в Google Sheets. Восстанавливаем UTC часы/минуты.
+  const m = /^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{1,2} 1899 (\d{2}):(\d{2}):\d{2} GMT([+-])(\d{2})(\d{2})\b/.exec(value);
+  if (!m) return value;
+  const hh=Number(m[1]),mm=Number(m[2]),offH=Number(m[4]),offM=Number(m[5]);
+  if (hh>23 || mm>59 || offH>23 || offM>59) return value;
+  const direction=m[3]==='+'?1:-1;
+  const utc=((hh*60+mm-direction*(offH*60+offM))%1440+1440)%1440;
+  return `${String(Math.floor(utc/60)).padStart(2,'0')}:${String(utc%60).padStart(2,'0')}`;
 }
 
   function replaceFromServer(payload) {
