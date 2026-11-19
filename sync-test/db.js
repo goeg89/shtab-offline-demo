@@ -130,20 +130,40 @@
   }
 
   /** Заменять серверным снимком можно только без неотправленной очереди. */
+  function normalizeDemoDate(value) {
+  if (typeof value !== 'string' || value === '' || /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const m = /^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) (\d{1,2}) (\d{4}) \d{2}:\d{2}:\d{2} GMT[+-]\d{4}\b/.exec(value);
+  if (!m) return value;
+  const month = {Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12}[m[1]];
+  const day = Number(m[2]), year = Number(m[3]);
+  const check = new Date(Date.UTC(year, month - 1, day));
+  if (check.getUTCFullYear() !== year || check.getUTCMonth() + 1 !== month || check.getUTCDate() !== day) return value;
+  return `${m[3]}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+}
+  function normalizeDemoTime(value) {
+  if (typeof value !== 'string' || value === '' || /^\d{2}:\d{2}$/.test(value)) return value;
+  const m = /^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{1,2} \d{4} (\d{2}):(\d{2}):\d{2} GMT[+-]\d{4}\b/.exec(value);
+  if (!m || Number(m[1]) > 23 || Number(m[2]) > 59) return value;
+  return `${m[1]}:${m[2]}`;
+}
+
   function replaceFromServer(payload) {
     if(!payload || payload.protocol!=='pwa-sync-test-0.2' || !Array.isArray(payload.cases) || !Array.isArray(payload.events))
       return Promise.reject(new Error('Сервер вернул неподдерживаемые данные'));
     if(payload.cases.length>500 || payload.events.length>2000) return Promise.reject(new Error('Превышен тестовый объём'));
-    for(const c of payload.cases)if(!/^CASE-DEMO-\d{3}$/.test(c.id)||!Number.isSafeInteger(c.localVersion)||c.localVersion<1)
-      return Promise.reject(new Error('Неверное дело из тестовой базы'));
-    for(const e of payload.events)if(!/^EVT-(DEMO-\d{3}|LOCAL-[a-zA-Z0-9-]{8,80})$/.test(e.id)||!Number.isSafeInteger(e.localVersion))
-      return Promise.reject(new Error('Неверное событие из тестовой базы'));
+    // Нормализуем строковое представление дат и времени, сформированное Google Sheets / Apps Script.
+    const normalizedCases=payload.cases.map(c=>c?{...c,plan:normalizeDemoDate(c.plan),legal:normalizeDemoDate(c.legal)}:c);
+    const normalizedEvents=payload.events.map(e=>e?{...e,date:normalizeDemoDate(e.date),time:normalizeDemoTime(e.time)}:e);
+    for(const c of normalizedCases)if(!c||!/^CASE-DEMO-\d{3}$/.test(c.id)||!Number.isSafeInteger(c.localVersion)||c.localVersion<1||!validDate(c.plan)||!validDate(c.legal))
+      return Promise.reject(new Error('Неверное дело или дата из тестовой базы'));
+    for(const e of normalizedEvents)if(!e||!/^EVT-(DEMO-\d{3}|LOCAL-[a-zA-Z0-9-]{8,80})$/.test(e.id)||!Number.isSafeInteger(e.localVersion)||!validDate(e.date)||!isStr(e.time,5))
+      return Promise.reject(new Error('Неверное событие или время из тестовой базы'));
     return transaction(['cases','events','queue','meta'],'readwrite',(tx,done,fail)=>{
       tx.objectStore('queue').getAll().onsuccess=function(){
         if(this.result?.length) {fail('Очередь не пуста. Сначала синхронизируйте или вручную разрешите конфликты.');return;}
         for(const name of ['cases','events'])tx.objectStore(name).clear();
-        payload.cases.forEach(c=>tx.objectStore('cases').put({...c}));
-        payload.events.forEach(e=>tx.objectStore('events').put({...e}));
+        normalizedCases.forEach(c=>tx.objectStore('cases').put(c));
+        normalizedEvents.forEach(e=>tx.objectStore('events').put(e));
         tx.objectStore('meta').put({key:'source',value:'test-server-v02'});
         tx.objectStore('meta').put({key:'lastPull',value:payload.pulledAt||new Date().toISOString()});
         tx.objectStore('meta').put({key:'seeded',value:true});
@@ -172,14 +192,16 @@
     if(!Array.isArray(doc.cases)||!Array.isArray(doc.events)||!Array.isArray(doc.queue)||doc.cases.length>1000||doc.events.length>5000||doc.queue.length>20000) throw new Error('Неверное содержимое или размер копии');
     const ids=new Set(),events=new Set(),ops=new Set();
     const cases=doc.cases.map(c=>{
-      if(!c||!isStr(c.id,100)||!isStr(c.client,300)||!isStr(c.task,5000)||!validDate(c.plan)||!validDate(c.legal)||!isStr(c.legalBasis,2000)||!Number.isSafeInteger(c.localVersion))throw new Error('Повреждена запись дела');
+      const plan=c?normalizeDemoDate(c.plan):null,legal=c?normalizeDemoDate(c.legal):null;
+      if(!c||!isStr(c.id,100)||!isStr(c.client,300)||!isStr(c.task,5000)||!validDate(plan)||!validDate(legal)||!isStr(c.legalBasis,2000)||!Number.isSafeInteger(c.localVersion))throw new Error('Повреждена запись дела');
       if(ids.has(c.id))throw new Error('Повтор ID дела');ids.add(c.id);
-      return {id:c.id,client:c.client,task:c.task,plan:c.plan,legal:c.legal,legalBasis:c.legalBasis,completed:Boolean(c.completed),localVersion:c.localVersion,updatedAt:String(c.updatedAt||'')};
+      return {id:c.id,client:c.client,task:c.task,plan,legal,legalBasis:c.legalBasis,completed:Boolean(c.completed),localVersion:c.localVersion,updatedAt:String(c.updatedAt||'')};
     });
     const eventRows=doc.events.map(e=>{
-      if(!e||!isStr(e.id,100)||!isStr(e.caseId,100)||!validDate(e.date)||!isStr(e.time,5)||!isStr(e.place,300)||!isStr(e.result,5000)||!Number.isSafeInteger(e.localVersion))throw new Error('Повреждена запись события');
+      const date=e?normalizeDemoDate(e.date):null,time=e?normalizeDemoTime(e.time):null;
+      if(!e||!isStr(e.id,100)||!isStr(e.caseId,100)||!validDate(date)||!isStr(time,5)||!isStr(e.place,300)||!isStr(e.result,5000)||!Number.isSafeInteger(e.localVersion))throw new Error('Повреждена запись события');
       if(events.has(e.id)||!ids.has(e.caseId))throw new Error('Событие с неправильным CASE ID или дубликат');events.add(e.id);
-      return {id:e.id,caseId:e.caseId,date:e.date,time:e.time,place:e.place,result:e.result,done:Boolean(e.done),localVersion:e.localVersion,createdAt:String(e.createdAt||''),completedAt:String(e.completedAt||'')};
+      return {id:e.id,caseId:e.caseId,date,time,place:e.place,result:e.result,done:Boolean(e.done),localVersion:e.localVersion,createdAt:String(e.createdAt||''),completedAt:String(e.completedAt||'')};
     });
     const queue=doc.queue.map(q=>{
       if(!q||!isStr(q.opId,100)||!isStr(q.caseId,100)||!ids.has(q.caseId)||!['pending','conflict'].includes(q.status)||!['case_update','hearing_and_case'].includes(q.kind)||typeof q.patch!=='object'||q.patch===null||Array.isArray(q.patch))throw new Error('Повреждена очередь действий');
