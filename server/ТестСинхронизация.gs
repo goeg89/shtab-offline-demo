@@ -1,5 +1,5 @@
 /**
- * PWA-SYNC-0.2-pre — ТОЛЬКО для отдельной демонстрационной таблицы.
+ * PWA-SYNC-0.2.3-pre — ТОЛЬКО для отдельной демонстрационной таблицы.
  * Никаких обращений к рабочей CRM / ШтабКод.gs. Без XP, актов или реальных дел.
  *
  * Транспорт: подписанный HMAC-SHA256 JSONP GET + обычный HTML form POST.
@@ -118,6 +118,22 @@ function testSyncRows_(sheet, width, limit) {
   if (count > limit) throw Error('Превышен размер тестового журнала');
   return count ? sheet.getRange(2, 1, count, width).getValues() : [];
 }
+/**
+ * Для ответа мобильному клиенту читаем даты и время именно в том виде,
+ * в каком они видны в тестовой Google Sheets. getValues() для ячеек TIME
+ * возвращает Date c историческим GMT; String(Date) сдвигает часы и минуты.
+ * Остальные поля остаются типизированными (boolean и revision).
+ * Это только чтение, рабочие строки и журнал Ops не изменяются.
+ */
+function testSyncRowsForClient_(sheet, width, limit, displayCols) {
+  const rows = testSyncRows_(sheet, width, limit);
+  if (!rows.length) return rows;
+  const shown = sheet.getRange(2, 1, rows.length, width).getDisplayValues();
+  rows.forEach((row, i) => displayCols.forEach(col => {
+    row[col] = String(shown[i][col] || '');
+  }));
+  return rows;
+}
 function testSyncCase_(v) {
   return {id:String(v[0]), client:String(v[1]), task:String(v[2] || ''),
     plan:String(v[3] || ''), legal:String(v[4] || ''), legalBasis:String(v[5] || ''),
@@ -134,8 +150,8 @@ function testSyncHandleRead_(req) {
   const ss = testSyncSpreadsheet_();
   if (req.action === 'hello') return {ok:true,protocol:TEST_SYNC.protocol,serverTime:Date.now()};
   if (req.action === 'pull') {
-    const cases = testSyncRows_(ss.getSheetByName('Cases'), 10, 500).filter(x => x[0]).map(testSyncCase_);
-    const events = testSyncRows_(ss.getSheetByName('Events'), 10, 2000).filter(x => x[0]).map(testSyncEvent_);
+    const cases = testSyncRowsForClient_(ss.getSheetByName('Cases'), 10, 500, [3,4]).filter(x => x[0]).map(testSyncCase_);
+    const events = testSyncRowsForClient_(ss.getSheetByName('Events'), 10, 2000, [2,3]).filter(x => x[0]).map(testSyncEvent_);
     return {ok:true,protocol:TEST_SYNC.protocol,cases,events,pulledAt:new Date().toISOString()};
   }
   if (req.action === 'status') {
