@@ -1,0 +1,12 @@
+{
+  "name":"Штаб · Офлайн-правки · ТЕСТ",
+  "short_name":"Штаб Правки ТЕСТ",
+  "id":"./",
+  "start_url":"./",
+  "scope":"./",
+  "display":"standalone",
+  "lang":"ru",
+  "background_color":"#edf2f8",
+  "theme_color":"#18395f",
+  "description":"Отдельная экспериментальная офлайн-PWA для зашифрованных локальных черновиков тестовой CRM"
+}
