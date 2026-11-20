@@ -1,4 +1,4 @@
-/* OFFLINE-SECURE-0.9-local-edits-pre.
+/* OFFLINE-SECURE-0.9.1-card-tap-pre (UI-only fix; 0.9 vault and journal remain compatible).
  * Public static app; private snapshots and local drafts are encrypted in IndexedDB.
  * NO Google Sheets writes, API calls, background sync, plaintext in storage.
  * Data from an unlocked vault lives briefly in memory until background/lock.
@@ -234,6 +234,22 @@
     const btn=document.createElement('button');btn.type='button';btn.textContent=caption;
     btn.addEventListener('click',fn);card.appendChild(btn);
   }
+  // The whole record opens on tap. Keep its explicit action button for clarity.
+  // Guard bubbling so tapping that button does not open the editor twice.
+  function tappableCard(card,caption,action){
+    card.classList.add('record-tappable');
+    card.setAttribute('role','button');
+    card.setAttribute('tabindex','0');
+    card.setAttribute('aria-label',caption);
+    card.addEventListener('click',event=>{
+      if(event.target.closest && event.target.closest('button,a,input,textarea,select'))return;
+      action();
+    });
+    card.addEventListener('keydown',event=>{
+      if(event.target!==card)return;
+      if(event.key==='Enter'||event.key===' '){event.preventDefault();action();}
+    });
+  }
   function caseList(){
     return snapshot.cases.slice().sort((a,b)=>a.client.localeCompare(b.client,'ru')||
       a.subject.localeCompare(b.subject,'ru'));
@@ -272,14 +288,21 @@
         label(card,'Спор: ',c.dispute);label(card,'Предмет: ',c.subject);label(card,'Статус: ',c.status);
         label(card,'Текущая задача: ',c.task||'Не назначена');label(card,'Тип: ',c.taskType);
         label(card,'План: ',fmtDate(c.planDate));label(card,'Юридический срок (без изменения): ',fmtDate(c.legalDate));
-        if(c.source==='acts_only')label(card,'Доступ: ','нет записи в «Список», локальные правки задачи отключены');
-        else command(card,'Изменить задачу и плановый срок',()=>openEditor('case',raw.caseId));
+        if(c.source==='acts_only'){
+          label(card,'Только просмотр: ','нет задачи на листе «Список». Редактирование недоступно.');
+        } else {
+          const edit=()=>openEditor('case',raw.caseId);
+          tappableCard(card,'Открыть редактор дела',edit);
+          command(card,'Изменить задачу и плановый срок',edit);
+        }
       } else if(mode==='events'){
         const e=effective(raw,'event');heading.textContent=e.client||e.subject||'Заседание';card.appendChild(heading);
         annotate(card,journal.filter(x=>x.kind==='event'&&x.id===raw.eventId).length);
         label(card,'Предмет: ',e.subject);label(card,'Когда: ',fmtDate(e.date)+(e.time?' в '+e.time:''));
         label(card,'Место: ',e.place);label(card,'Результат: ',e.result||'Не указан');
-        command(card,'Зафиксировать результат',()=>openEditor('event',raw.eventId));
+        const edit=()=>openEditor('event',raw.eventId);
+        tappableCard(card,'Открыть редактор события',edit);
+        command(card,'Зафиксировать результат',edit);
       } else {
         const src=raw.kind==='case'?snapshot.cases.find(c=>c.caseId===raw.id):snapshot.events.find(e=>e.eventId===raw.id);
         const c=raw.kind==='case'?src:snapshot.cases.find(x=>x.caseId===src?.caseId);
@@ -288,7 +311,9 @@
         label(card,'Исходное: ',raw.field==='planDate'?fmtDate(raw.from):raw.from||'—');
         label(card,'Локально: ',raw.field==='planDate'?fmtDate(raw.to):raw.to||'—');
         label(card,'Время правки: ',raw.editedAt.slice(0,19).replace('T',' '));
-        command(card,'Открыть запись',()=>{mode=raw.kind==='case'?'cases':'events';offset=0;el.query.value='';render();openEditor(raw.kind,raw.id);});
+        const open=()=>{mode=raw.kind==='case'?'cases':'events';offset=0;el.query.value='';render();openEditor(raw.kind,raw.id);};
+        tappableCard(card,'Открыть запись с локальной правкой',open);
+        command(card,'Открыть запись',open);
       }
       el.records.appendChild(card);
     }
