@@ -1,7 +1,7 @@
-/* OFFLINE-SECURE-0.9.1-card-tap-pre: только статические ресурсы отдельной PWA.
+/* OFFLINE-SECURE-0.9.2-quickview-safe-restore-pre: только статические ресурсы отдельной PWA.
  * Ни шифротекст пользователя, ни открытые данные, ни URL CRM не кэшируются SW.
  */
-const CACHE='shtab-secure-edit-static-0.9.1-card-tap-1';
+const CACHE='shtab-secure-edit-static-0.9.2-quickview-1';
 const FILES=['./','./index.html','./styles.css','./app.js','./manifest.webmanifest'];
 self.addEventListener('install', e => e.waitUntil(
   caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting())
