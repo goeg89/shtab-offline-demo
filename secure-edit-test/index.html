@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#18395f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Штаб Правки ТЕСТ">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'self' data:; font-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'self'; base-uri 'none'; form-action 'none'">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./styles.css">
+  <title>Штаб · Офлайн-правки · ТЕСТ</title>
+</head>
+<body>
+<main>
+  <header>
+    <p class="eyebrow">Мои дела · отдельный тест 0.9</p>
+    <h1>Офлайн-правки</h1>
+    <p>Дела и заседания из <strong>тестовой копии</strong>. Изменения остаются зашифрованными на этом iPhone. <strong>Никакой записи в Google Sheets или автоматической синхронизации.</strong></p>
+    <div id="sw-status" class="small" role="status">Проверка офлайн-оболочки…</div>
+  </header>
+  <section id="setup">
+    <h2>1. Импорт копии для правок</h2>
+    <p class="small">Нужен новый файл, полученный кнопкой «Подготовить офлайн-копию для локальных правок (0.9)». Файл версии 0.8 подходит только для просмотра в старом приложении.</p>
+    <label for="vault-file">Зашифрованный файл 0.9 из «Файлов» iPhone</label>
+    <input id="vault-file" type="file" accept=".json,.shtabvault.json,application/json">
+    <label for="import-pass">Парольная фраза, заданная при экспорте</label>
+    <input id="import-pass" type="password" autocomplete="off" placeholder="Отдельная фраза, не пароль от Google">
+    <button id="import" type="button">Проверить и сохранить шифрованную копию</button>
+    <p class="small">Сначала добавь этот новый адрес на экран «Домой», затем выполняй импорт из приложения с новой иконки. Шифротекст хранится в хранилище именно этого приложения.</p>
+  </section>
+  <section id="unlock-zone" hidden>
+    <h2>2. Разблокировать</h2>
+    <p id="stored-note" class="small"></p>
+    <label for="unlock-pass">Парольная фраза</label>
+    <input id="unlock-pass" type="password" autocomplete="off" placeholder="Фраза от офлайн-файла 0.9">
+    <button id="unlock" type="button">Открыть офлайн-редактор</button>
+    <button id="delete" class="danger ghost" type="button">Удалить локальную копию и все её правки</button>
+    <p class="small">Храни отдельно исходный зашифрованный файл и резервные копии зашифрованного журнала. При очистке данных iPhone хранилище приложения может исчезнуть.</p>
+  </section>
+  <section id="viewer" hidden>
+    <div class="viewer-head"><h2>Тестовые данные</h2><button id="lock" type="button" class="ghost compact">Заблокировать</button></div>
+    <div class="stats"><span id="case-count"></span><span id="event-count"></span><span id="draft-count"></span></div>
+    <p class="warning">Это снимок на момент экспорта. Правки <strong>НЕ отправляются</strong> в CRM. Юридические сроки остаются только для чтения. Перед будущим применением потребуется сверка исходных значений и разрешение конфликтов.</p>
+    <div class="switches"><button id="tab-cases" class="active" type="button">Дела</button><button id="tab-events" type="button">Заседания / встречи</button><button id="tab-drafts" type="button">Мои правки</button></div>
+    <label for="query">Поиск по офлайн-копии</label>
+    <input id="query" type="search" placeholder="Клиент, задача, заседание" autocomplete="off">
+    <div id="page-count" class="small"></div>
+    <div id="records"></div>
+    <div class="pages"><button id="prev" class="ghost" type="button">Назад</button><button id="next" class="ghost" type="button">Далее</button></div>
+    <section id="journal-tools">
+      <h3>Зашифрованный журнал изменений</h3>
+      <p class="small">В журнале хранятся исходное значение, новое значение, идентификатор записи и время правки. Он зашифрован той же парольной фразой и привязан к этому снимку. Не содержит команд записи на сервер.</p>
+      <button id="backup" type="button" class="secondary">Сохранить резервную копию журнала в «Файлы»</button>
+      <label for="restore-file">Восстановить журнал для этого же снимка (из «Файлов»)</label>
+      <input id="restore-file" type="file" accept=".json,.shtabchanges.json,application/json">
+      <button id="restore" type="button" class="secondary">Проверить и восстановить зашифрованный журнал</button>
+      <button id="clear-drafts" type="button" class="ghost danger">Отменить все локальные правки</button>
+    </section>
+  </section>
+  <section id="editor" hidden>
+    <h2 id="edit-title">Локальная правка</h2>
+    <p class="warning">Сохраняется только зашифрованный локальный черновик. Исходная CRM и юридический срок не изменяются.</p>
+    <div id="case-edit-fields" hidden>
+      <label for="edit-task">Текущая узкая задача</label>
+      <textarea id="edit-task" rows="4" maxlength="5000" placeholder="Что сделать дальше"></textarea>
+      <label for="edit-date">Плановый срок</label>
+      <input id="edit-date" type="date">
+    </div>
+    <div id="event-edit-fields" hidden>
+      <label for="edit-result">Результат судебного заседания / встречи</label>
+      <textarea id="edit-result" rows="5" maxlength="5000" placeholder="Что произошло, какое действие требуется"></textarea>
+    </div>
+    <button id="save-edit" type="button">Зашифровать и сохранить правку на iPhone</button>
+    <button id="cancel-edit" type="button" class="ghost">Отмена</button>
+  </section>
+  <div id="status" role="status" class="status" aria-live="polite">Ожидается зашифрованная копия 0.9.</div>
+  <footer>OFFLINE-SECURE-0.9-local-edits-pre · отдельный эксперимент · только тестовая CRM. Статическая оболочка публичная, клиентские данные и журнал хранятся только в шифротексте на устройстве. Нет сетевого API, отправки на сервер и аналитики.</footer>
+</main>
+<script src="./app.js" defer></script>
+</body>
+</html>
