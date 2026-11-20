@@ -1,4 +1,4 @@
-/* OFFLINE-SECURE-0.9.1-card-tap-pre (UI-only fix; 0.9 vault and journal remain compatible).
+/* OFFLINE-SECURE-0.9.2-quickview-safe-restore-pre (quick view opt-in + non-destructive backup restore; compatible vault 0.9).
  * Public static app; private snapshots and local drafts are encrypted in IndexedDB.
  * NO Google Sheets writes, API calls, background sync, plaintext in storage.
  * Data from an unlocked vault lives briefly in memory until background/lock.
@@ -28,7 +28,9 @@
     'draft-count','tab-cases','tab-events','tab-drafts','query','page-count',
     'records','prev','next','journal-tools','backup','restore-file','restore','clear-drafts','editor',
     'edit-title','case-edit-fields','event-edit-fields','edit-task','edit-date',
-    'edit-result','save-edit','cancel-edit','status','sw-status'];
+    'edit-result','save-edit','cancel-edit','status','sw-status',
+    'quick-controls','quick-note','quick-status','quick-enable','quick-disable','quick-disable-locked',
+    'edit-auth','edit-pass','edit-authorize','edit-auth-cancel'];
   const el={};ids.forEach(id=>{el[id]=document.getElementById(id);});
 
   let envelope=null;
@@ -41,6 +43,10 @@
   let editTarget=null;
   let busy=false;
   let generation=0;
+  let quickEnabled=false;
+  let quickView=false;
+  let manualLock=false;
+  let pendingEdit=null;
 
   function fail(code) {const e=new Error(code);e.code=code;throw e;}
   function notify(text,style) {
@@ -54,6 +60,8 @@
     if(code==='JOURNAL_DAMAGED')return 'Не удалось проверить зашифрованный журнал правок. Правки не удалены.';
     if(code==='HAS_VAULT')return 'Копия уже есть. Удаление старой копии уничтожит локальные правки — сначала сохрани журнал.';
     if(code==='NOT_EDITABLE')return 'У дела нет записи на листе «Список», поэтому здесь нельзя менять задачу.';
+    if(code==='QUICK_NOT_SUPPORTED')return 'Safari не смог безопасно сохранить локальный ключ быстрого просмотра. Фраза по-прежнему работает; ничего не удалено.';
+    if(code==='MERGE_CONFLICT')return 'В резервном файле есть правки, отличающиеся от уже сохранённых на этом iPhone. Журнал НЕ изменён. Для разрешения конфликта нужна отдельная проверка.';
     return 'Операция не выполнена; исходные данные и предыдущие правки сохранены.';
   }
   function supportsCrypto(){return!!(window.isSecureContext&&window.crypto&&crypto.subtle&&crypto.getRandomValues&&window.indexedDB);}
@@ -144,10 +152,17 @@
       tx.onabort=()=>reject(new Error('STORAGE'));
     });}finally{db.close();}
   }
+  async function deleteStored(name){
+    const db=await openDB();try{await new Promise((resolve,reject)=>{
+      const tx=db.transaction(DB_STORE,'readwrite');tx.objectStore(DB_STORE).delete(name);
+      tx.oncomplete=resolve;tx.onerror=()=>reject(new Error('STORAGE'));
+      tx.onabort=()=>reject(new Error('STORAGE'));
+    });}finally{db.close();}
+  }
   async function eraseAll(){
     const db=await openDB();try{await new Promise((resolve,reject)=>{
       const tx=db.transaction(DB_STORE,'readwrite');const s=tx.objectStore(DB_STORE);
-      s.delete('encrypted');s.delete('drafts');
+      s.delete('encrypted');s.delete('drafts');s.delete('quick');s.delete('quick-paused');
       tx.oncomplete=resolve;tx.onerror=()=>reject(new Error('STORAGE'));
       tx.onabort=()=>reject(new Error('STORAGE'));
     });}finally{db.close();}
@@ -206,14 +221,30 @@
     el.query.value='';el.records.replaceChildren();el['page-count'].textContent='';
     el['case-count'].textContent='';el['event-count'].textContent='';el['draft-count'].textContent='';
     el['edit-task'].value='';el['edit-date'].value='';el['edit-result'].value='';
-    el['unlock-pass'].value='';el['import-pass'].value='';
+    el['unlock-pass'].value='';el['import-pass'].value='';el['edit-pass'].value='';
+    quickView=false;pendingEdit=null;el['edit-auth'].hidden=true;
     el.editor.hidden=true;el.viewer.hidden=true;
   }
-  function lockScreen(){generation++;resetView();if(envelope){el.setup.hidden=true;el['unlock-zone'].hidden=false;}}
+  function lockScreen(manual){
+    if(manual===true)manualLock=true;
+    generation++;resetView();if(envelope){el.setup.hidden=true;el['unlock-zone'].hidden=false;}
+  }
   function showStored(){
     el['unlock-zone'].hidden=!envelope;el.setup.hidden=!!envelope;
     el['stored-note'].textContent=envelope?('Снимок: '+String(envelope.createdAt||'').slice(0,10)+
-      '. Хранится зашифрованным. Локальные черновики требуют той же фразы.') : '';
+      '. Хранится зашифрованным. Режим без ввода фразы включается только по желанию.') : '';
+    el['quick-disable-locked'].hidden=!quickEnabled||!envelope;
+  }
+  function refreshQuickUi(){
+    el['quick-controls'].hidden=!snapshot;
+    el['quick-enable'].hidden=quickEnabled||quickView;
+    el['quick-disable'].hidden=!quickEnabled;
+    el['quick-note'].hidden=!quickView;
+    if(snapshot){el['quick-status'].textContent=quickEnabled?
+      (quickView?'Быстрый просмотр включён · только чтение. Для изменения нужна фраза.':
+      'Быстрый просмотр на этом iPhone включён. После нового запуска список дел откроется автоматически.'):
+      'Быстрый просмотр выключен — при запуске необходима парольная фраза.';}
+    el['journal-tools'].hidden=quickView;
   }
   function fmtDate(s){return /^\d{4}-\d{2}-\d{2}$/.test(s)?s.slice(8,10)+'.'+s.slice(5,7)+'.'+s.slice(0,4):(s||'—');}
   function label(card,name,v){if(v==='')return;const p=document.createElement('p');p.textContent=name+v;card.appendChild(p);}
@@ -324,12 +355,18 @@
     el.prev.disabled=offset===0;el.next.disabled=offset+PAGE_SIZE>=items.length;
     ['cases','events','drafts'].forEach(k=>el['tab-'+k].className=mode===k?'active':'');
     el.backup.disabled=journal.length===0;el['clear-drafts'].disabled=journal.length===0;
+    refreshQuickUi();
   }
   function openEditor(kind,id){
     if(busy||!snapshot||!cryptoKey)return;
     const source=kind==='case'?snapshot.cases.find(c=>c.caseId===id):snapshot.events.find(e=>e.eventId===id);
     if(!source)return;
     if(kind==='case'&&source.source==='acts_only')return notify(errorMessage('NOT_EDITABLE'),'error');
+    if(quickView){
+      pendingEdit={kind,id};el['edit-pass'].value='';el['edit-auth'].hidden=false;
+      el['edit-auth'].scrollIntoView({behavior:'smooth',block:'start'});
+      return notify('Для редактирования нужна исходная парольная фраза. Быстрый просмотр не даёт права изменять записи.','');
+    }
     editTarget={kind,id};
     el['case-edit-fields'].hidden=kind!=='case';el['event-edit-fields'].hidden=kind!=='event';
     const live=effective(source,kind);
@@ -351,7 +388,7 @@
     return sealed;
   }
   async function handleSave(){
-    if(busy||!cryptoKey||!snapshot||!editTarget)return;
+    if(busy||quickView||!cryptoKey||!snapshot||!editTarget)return;
     const target=editTarget,source=target.kind==='case'?
       snapshot.cases.find(x=>x.caseId===target.id):snapshot.events.find(x=>x.eventId===target.id);
     if(!source)return;
@@ -397,6 +434,20 @@
     }catch(e){if(current===generation)notify(errorMessage(e.code||'BAD_FORMAT'),'error');}
     finally{phrase='';el['import-pass'].value='';busy=false;el.import.disabled=false;}
   }
+  async function openWithKey(key,readOnly,current){
+    const data=await decryptVault(envelope,key);
+    const id=await getSnapshotId(envelope);
+    const sealed=await getStored('drafts');
+    const existing=sealed?await decryptLog(sealed,key,data,id):[];
+    if(current!==generation||document.hidden)return false;
+    snapshot=data;cryptoKey=key;snapshotId=id;journal=existing;quickView=readOnly;
+    pendingEdit=null;el['edit-auth'].hidden=true;
+    el.setup.hidden=true;el['unlock-zone'].hidden=true;el.viewer.hidden=false;
+    mode='cases';offset=0;el.query.value='';render();
+    notify(readOnly?'Дела открыты автоматически в режиме просмотра. Для правок введи парольную фразу.':
+      'Офлайн-копия открыта. Правки сохраняются на iPhone в зашифрованном виде.','success');
+    return true;
+  }
   async function handleUnlock(){
     if(busy||!envelope)return;
     let phrase=el['unlock-pass'].value;
@@ -404,29 +455,86 @@
     busy=true;el.unlock.disabled=true;const current=generation;
     try{
       const key=await derivedKey(envelope,phrase);phrase='';el['unlock-pass'].value='';
-      const data=await decryptVault(envelope,key);
-      const id=await getSnapshotId(envelope);
-      const sealed=await getStored('drafts');
-      const existing=sealed?await decryptLog(sealed,key,data,id):[];
-      if(current===generation&&!document.hidden){
-        snapshot=data;cryptoKey=key;snapshotId=id;journal=existing;
-        el.setup.hidden=true;el['unlock-zone'].hidden=true;el.viewer.hidden=false;
-        mode='cases';offset=0;el.query.value='';render();
-        notify('Офлайн-копия открыта. Правки сохраняются только на устройстве в шифрованном виде.','success');
-      }
+      if(await openWithKey(key,false,current)){manualLock=false;await deleteStored('quick-paused');}
     }catch(e){if(current===generation)notify(errorMessage(e.code||'BAD_PASSWORD_OR_FILE'),'error');}
     finally{phrase='';el['unlock-pass'].value='';busy=false;el.unlock.disabled=false;}
+  }
+  function validQuickRecord(r,id){
+    return !!r&&r.format==='shtab-quick-view-key-v1'&&r.snapshotId===id&&
+      r.key?.type==='secret'&&r.key?.algorithm?.name==='AES-GCM'&&
+      r.key.extractable===false&&Array.isArray(r.key.usages)&&
+      r.key.usages.includes('decrypt');
+  }
+  async function tryQuickUnlock(){
+    if(!envelope||manualLock||busy||snapshot||document.hidden)return;
+    busy=true;const current=generation;
+    try{
+      const saved=await getStored('quick');
+      if(!saved){quickEnabled=false;showStored();return;}
+      const id=await getSnapshotId(envelope);
+      if(!validQuickRecord(saved,id)){
+        quickEnabled=false;await deleteStored('quick');showStored();
+        if(current===generation)notify('Быстрый доступ устарел или недоступен; введи парольную фразу. Данные сохранены.','error');
+        return;
+      }
+      quickEnabled=true;showStored();
+      await openWithKey(saved.key,true,current);
+    }catch(_){
+      if(current===generation)notify('Быстрый просмотр не открылся. Введи обычную парольную фразу, данные сохранены.','error');
+    }finally{busy=false;}
+  }
+  async function handleQuickEnable(){
+    if(busy||quickView||!snapshot||!cryptoKey||!envelope)return;
+    if(!window.confirm('Включить автоматический просмотр дел на этом iPhone? Любой человек с доступом к разблокированному устройству сможет просматривать данные без парольной фразы. Локальный неэкспортируемый ключ сохранится в хранилище этого приложения. Для правок фраза по-прежнему нужна.'))return;
+    busy=true;el['quick-enable'].disabled=true;
+    try{
+      const item={format:'shtab-quick-view-key-v1',snapshotId:snapshotId,key:cryptoKey};
+      await store('quick',item);await deleteStored('quick-paused');manualLock=false;
+      const verify=await getStored('quick');
+      if(!validQuickRecord(verify,snapshotId))fail('QUICK_NOT_SUPPORTED');
+      quickEnabled=true;refreshQuickUi();showStored();
+      notify('Быстрый просмотр включён. При следующем запуске дела будут открываться автоматически; правки требуют фразу.','success');
+    }catch(_){
+      try{await deleteStored('quick');}catch(__){}
+      quickEnabled=false;refreshQuickUi();showStored();
+      notify(errorMessage('QUICK_NOT_SUPPORTED'),'error');
+    }finally{busy=false;el['quick-enable'].disabled=false;}
+  }
+  async function handleQuickDisable(){
+    if(busy)return;
+    busy=true;
+    try{
+      await deleteStored('quick');await deleteStored('quick-paused');quickEnabled=false;manualLock=false;
+      if(quickView){lockScreen(true);notify('Быстрый просмотр выключен. Для следующего входа нужна фраза.','success');}
+      else{refreshQuickUi();showStored();notify('Быстрый просмотр выключен. Зашифрованная копия и журнал сохранены.','success');}
+    }catch(_){notify(errorMessage('STORAGE'),'error');}
+    finally{busy=false;}
+  }
+  async function handleEditAuthorize(){
+    if(busy||!quickView||!pendingEdit||!envelope)return;
+    let phrase=el['edit-pass'].value;
+    if(phrase.length<16)return notify('Для редактирования нужна исходная парольная фраза (не менее 16 символов).','error');
+    busy=true;el['edit-authorize'].disabled=true;const current=generation,requested=pendingEdit;
+    try{
+      const key=await derivedKey(envelope,phrase);phrase='';el['edit-pass'].value='';
+      await decryptVault(envelope,key);
+      if(current!==generation||document.hidden)return;
+      cryptoKey=key;quickView=false;pendingEdit=null;el['edit-auth'].hidden=true;
+      busy=false;render();openEditor(requested.kind,requested.id);
+      notify('Редактирование разблокировано на время текущего сеанса.','success');
+    }catch(_){if(current===generation)notify('Парольная фраза неверная. Данные не изменены.','error');}
+    finally{phrase='';el['edit-pass'].value='';busy=false;el['edit-authorize'].disabled=false;}
   }
   async function handleDelete(){
     if(busy||!envelope)return;
     if(!window.confirm('Удалить зашифрованную копию И ВСЕ локальные правки с iPhone? Это нельзя отменить. Сначала сохрани журнал в «Файлы».'))return;
     busy=true;
-    try{await eraseAll();envelope=null;lockScreen();showStored();notify('Локальная копия и все правки удалены.','success');}
+    try{await eraseAll();envelope=null;quickEnabled=false;manualLock=false;lockScreen();showStored();notify('Локальная копия и все правки удалены.','success');}
     catch(e){notify(errorMessage(e.code||'STORAGE'),'error');}
     finally{busy=false;}
   }
   async function handleClearDrafts(){
-    if(busy||!cryptoKey||!snapshot||!journal.length)return;
+    if(busy||quickView||!cryptoKey||!snapshot||!journal.length)return;
     if(!window.confirm('Отменить ВСЕ локальные правки? Они исчезнут из зашифрованного журнала.'))return;
     busy=true;const current=generation;
     try{await persistDrafts([],cryptoKey,snapshot,snapshotId);
@@ -435,12 +543,10 @@
     finally{busy=false;}
   }
   async function handleRestore(){
-    if(busy||!cryptoKey||!snapshot||!snapshotId)return;
+    if(busy||quickView||!cryptoKey||!snapshot||!snapshotId)return;
     const file=el['restore-file'].files?.[0];
     if(!file||file.size<100||file.size>FILE_LIMIT)
       return notify('Выбери зашифрованный журнал .shtabchanges.json размером до 5 МБ.','error');
-    if(journal.length>0)
-      return notify('Сначала сохрани текущий журнал и явно отмени свои правки. Импорт не объединяет журналы автоматически.','error');
     busy=true;el.restore.disabled=true;const current=generation;
     try{
       const outer=JSON.parse(await file.text());
@@ -450,16 +556,36 @@
       validateLogBox(outer.encryptedJournal,snapshotId);
       const items=await decryptLog(outer.encryptedJournal,cryptoKey,snapshot,snapshotId);
       if(!items.length)fail('BAD_FORMAT');
-      await store('drafts',outer.encryptedJournal);
-      const verified=await getStored('drafts');
-      if(JSON.stringify(verified)!==JSON.stringify(outer.encryptedJournal))fail('STORAGE');
-      if(current===generation){journal=items;el['restore-file'].value='';render();
-        notify('Зашифрованный журнал восстановлен для этого снимка. Никаких записей в CRM нет.','success');}
+      const sameKey=x=>x.kind+'|'+x.id+'|'+x.field;
+      const existing=new Map(journal.map(x=>[sameKey(x),x]));
+      const merged=journal.slice();
+      let additional=0,already=0,conflicts=0;
+      for(const item of items){
+        const old=existing.get(sameKey(item));
+        if(!old){merged.push(item);additional++;}
+        else if(old.from===item.from&&old.to===item.to)already++;
+        else conflicts++;
+      }
+      if(current!==generation||document.hidden)return;
+      if(conflicts){
+        return notify('Проверка файла пройдена, но есть конфликтующие правки: '+conflicts+
+          '. Ничего не заменено и не удалено. Совпадают: '+already+', новые: '+additional+'.','error');
+      }
+      if(!additional){el['restore-file'].value='';
+        return notify('Резервная копия подлинная и подходит этому снимку. Все '+already+
+          ' правки уже сохранены — ничего не изменено.','success');}
+      if(!window.confirm('Резервная копия проверена. Совпадают: '+already+
+        ', новых: '+additional+'. Без удаления старых правок ДОБАВИТЬ новые в шифрованный журнал?'))return;
+      if(current!==generation||document.hidden)return;
+      await persistDrafts(merged,cryptoKey,snapshot,snapshotId);
+      if(current===generation){journal=merged;el['restore-file'].value='';render();
+        notify('Безопасное восстановление: добавлено правок '+additional+
+          '. Все существующие правки сохранены. В CRM ничего не отправлено.','success');}
     }catch(e){if(current===generation)notify(errorMessage(e.code||'JOURNAL_DAMAGED'),'error');}
     finally{busy=false;el.restore.disabled=false;}
   }
   async function handleBackup(){
-    if(busy||!cryptoKey||!snapshot||!journal.length)return;
+    if(busy||quickView||!cryptoKey||!snapshot||!journal.length)return;
     busy=true;
     try{
       const boxed=await getStored('drafts');validateLogBox(boxed,snapshotId);
@@ -483,24 +609,47 @@
   el.import.addEventListener('click',handleImport);
   el.unlock.addEventListener('click',handleUnlock);
   el.delete.addEventListener('click',handleDelete);
-  el.lock.addEventListener('click',()=>{lockScreen();notify('Экран заблокирован.','');});
+  el.lock.addEventListener('click',async ()=>{
+    lockScreen(true);
+    try{if(quickEnabled)await store('quick-paused',true);}catch(_){
+      notify('Экран заблокирован, но не удалось сохранить запрет автовхода после перезапуска.','error');return;
+    }
+    notify('Экран заблокирован вручную. До следующего ввода фразы автоматический просмотр приостановлен.','');
+  });
   el['save-edit'].addEventListener('click',handleSave);
   el['cancel-edit'].addEventListener('click',()=>{el.editor.hidden=true;editTarget=null;});
   el.backup.addEventListener('click',handleBackup);
   el.restore.addEventListener('click',handleRestore);
+  el['quick-enable'].addEventListener('click',handleQuickEnable);
+  el['quick-disable'].addEventListener('click',handleQuickDisable);
+  el['quick-disable-locked'].addEventListener('click',handleQuickDisable);
+  el['edit-authorize'].addEventListener('click',handleEditAuthorize);
+  el['edit-auth-cancel'].addEventListener('click',()=>{
+    pendingEdit=null;el['edit-pass'].value='';el['edit-auth'].hidden=true;
+  });
   el['clear-drafts'].addEventListener('click',handleClearDrafts);
   ['cases','events','drafts'].forEach(k=>el['tab-'+k].addEventListener('click',()=>{mode=k;offset=0;el.query.value='';render();}));
   el.query.addEventListener('input',()=>{offset=0;render();});
   el.prev.addEventListener('click',()=>{offset=Math.max(0,offset-PAGE_SIZE);render();});
   el.next.addEventListener('click',()=>{offset+=PAGE_SIZE;render();});
-  document.addEventListener('visibilitychange',()=>{if(document.hidden)lockScreen();});
-  window.addEventListener('pagehide',lockScreen);
-  window.addEventListener('pageshow',e=>{if(e.persisted)lockScreen();});
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden)lockScreen();else if(!manualLock)void tryQuickUnlock();
+  });
+  window.addEventListener('pagehide',()=>lockScreen());
+  window.addEventListener('pageshow',e=>{
+    if(e.persisted){lockScreen();if(!manualLock)void tryQuickUnlock();}
+  });
   (async function init(){
     if(!supportsCrypto()){notify('Для этого приложения необходимы HTTPS, WebCrypto и IndexedDB.','error');return;}
-    try{envelope=await getStored('encrypted');if(envelope)validateEnvelope(envelope);
-      showStored();notify(envelope?'Шифрованная копия найдена. Можно открыть без сети.':'Ожидается файл 0.9 из тестового Web App.','');}
-    catch(_){notify('Не удалось прочитать локальное хранилище. Данные не удалялись.','error');}
+    try{
+      envelope=await getStored('encrypted');if(envelope)validateEnvelope(envelope);
+      quickEnabled=!!(envelope&&await getStored('quick'));
+      manualLock=quickEnabled&&(await getStored('quick-paused'))===true;
+      showStored();notify(envelope?'Шифрованная копия найдена. Проверяю быстрый просмотр…':
+        'Ожидается файл 0.9 из тестового Web App.','');
+      if(envelope&&!manualLock)await tryQuickUnlock();
+      else if(manualLock)notify('Быстрый просмотр приостановлен ручной блокировкой. Введи фразу, чтобы снять запрет.','');
+    }catch(_){notify('Не удалось прочитать локальное хранилище. Данные не удалялись.','error');}
     if('serviceWorker' in navigator){
       try{await navigator.serviceWorker.register('./sw.js',{scope:'./'});await navigator.serviceWorker.ready;
         el['sw-status'].textContent='Оболочка готова к офлайн-проверке. Отключение сети проверь вручную.';
