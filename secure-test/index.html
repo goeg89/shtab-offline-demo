@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#174781">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Штаб Сейф ТЕСТ">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'self' data:; font-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'self'; base-uri 'none'; form-action 'none'">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./styles.css">
+  <title>Штаб · Офлайн-сейф · ТЕСТ</title>
+</head>
+<body>
+<main>
+  <header>
+    <p class="eyebrow">Мои дела · отдельный тест</p>
+    <h1>Офлайн-сейф</h1>
+    <p>Только просмотр тестовой CRM. Зашифрованная копия хранится на этом устройстве; без сети для открытия нужен отдельный пароль.</p>
+    <div id="sw-status" class="small" role="status">Проверка готовности к офлайн-работе…</div>
+  </header>
+
+  <section id="setup">
+    <h2>1. Загрузить зашифрованную копию</h2>
+    <label for="vault-file">Выбери файл <code>.shtabvault.json</code> из приложения «Файлы»</label>
+    <input id="vault-file" type="file" accept=".json,.shtabvault.json,application/json">
+    <label for="import-pass">Парольная фраза, заданная при экспорте</label>
+    <input id="import-pass" type="password" autocomplete="off" placeholder="Не пароль от Google">
+    <button id="import" type="button">Проверить пароль и сохранить шифрованную копию</button>
+    <p class="small">Сначала добавь эту страницу на экран «Домой» из Safari, затем импортируй файл именно из установленного приложения. Его хранилище отделено от обычной вкладки Safari.</p>
+  </section>
+
+  <section id="unlock-zone" hidden>
+    <h2>2. Разблокировать данные</h2>
+    <p id="stored-note" class="small"></p>
+    <label for="unlock-pass">Парольная фраза</label>
+    <input id="unlock-pass" type="password" autocomplete="off" placeholder="Пароль от офлайн-копии">
+    <button id="unlock" type="button">Открыть дела без интернета</button>
+    <button id="delete" class="danger ghost" type="button">Удалить офлайн-копию с устройства</button>
+    <p class="small">Если пароль утерян, восстановить данные из шифротекста нельзя. Сохрани зашифрованный файл в «Файлах» отдельно.</p>
+  </section>
+
+  <section id="viewer" hidden>
+    <div class="viewer-top"><h2>Тестовые данные</h2><button id="lock" class="ghost compact" type="button">Заблокировать</button></div>
+    <div class="stats"><span id="case-count"></span><span id="event-count"></span></div>
+    <div class="switches"><button id="tab-cases" class="active" type="button">Дела</button><button id="tab-events" type="button">События</button></div>
+    <label for="query">Поиск по загруженной копии</label>
+    <input id="query" type="search" placeholder="Клиент, задача, заседание" autocomplete="off">
+    <div id="page-count" class="small"></div>
+    <div id="records"></div>
+    <div class="pages"><button id="prev" class="ghost" type="button">Назад</button><button id="next" class="ghost" type="button">Далее</button></div>
+    <p class="warning">Офлайн-копия может устареть. Для актуальных сроков сверяйся с основной CRM. Запись и синхронизация отключены.</p>
+  </section>
+  <div id="status" role="status" class="status" aria-live="polite">Данные не загружены.</div>
+  <footer>OFFLINE-SECURE-0.8-vault-pre · изолированная PWA · только тестовая CRM. Нет аналитики, внешних сетевых запросов, API записи и хранения открытых данных в IndexedDB.</footer>
+</main>
+<script src="./app.js" defer></script>
+</body>
+</html>
