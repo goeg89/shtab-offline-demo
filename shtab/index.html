@@ -3502,6 +3502,14 @@
     function renderActProgress() {
       var progress = state.actProgress;
       if (!progress) return;
+      if (progress.offlineUnavailable) {
+        state.actProgress = null;
+        document.getElementById('actsLast').textContent = 'Даты актов этого дела пока не загружены на устройство. Нажми «Отправить и обновить», пока дело открыто. Это не мешает сохранять задачи и сроки.';
+        document.getElementById('actsRows').textContent = '';
+        document.getElementById('actsClose').classList.add('hidden');
+        document.getElementById('actsHonorClose').classList.add('hidden');
+        return;
+      }
       document.getElementById('actsLast').textContent = progress.lastClosed
         ? 'Последний закрытый: акт ' + progress.lastClosed.number + ' · ' + progress.lastClosed.dateDisplay
         : 'Закрытых актов пока нет';
@@ -4580,6 +4588,8 @@
 [hidden]{display:none!important}
 .offline-panel{padding:8px 12px;margin:8px 0;background:#f3f7fc}
 .offline-summary{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;line-height:1.4}
+#offline-updated{display:block;margin-top:4px;font-size:12px;color:#52647a}
+#offline-version{text-align:center;color:#52647a;font-size:12px;padding:20px 8px 90px}
 .offline-panel .offline-summary button{display:inline-block;width:auto;min-height:36px;margin:0;padding:7px 10px;font-size:13px;flex-shrink:0}
 #offline-settings>summary{display:none}
 @media(max-width:600px){
