@@ -4,6 +4,9 @@
 <head><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-src 'none'">
   <base target="_top">
   <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Штаб">
   <style>
     :root {
       --blue: #2563eb;
@@ -4573,5 +4576,21 @@
 }());
 </script>
 
+<style id="offline-mobile-layout">
+@media(max-width:600px){
+ body{font-size:16px} .app{width:100%;padding-left:12px;padding-right:12px}
+ input,select,textarea{font-size:16px!important;max-width:100%;box-sizing:border-box}
+ label,.field-label{font-size:14px!important;line-height:1.45}
+ button{min-height:44px}.tab{font-size:14px!important;min-height:48px}
+ .focus-card>summary,.signal-card>summary,.mode-card>summary{font-size:16px;min-height:50px}
+ .offline-panel{padding:14px}.offline-panel p{font-size:14px;line-height:1.5}
+ .offline-panel button{display:block;width:100%;font-size:16px;min-height:46px;margin:8px 0}
+ .focus-main,.priority-choice-title,.signal-client,.signal-task{font-size:16px!important}
+ .focus-meta,.priority-choice-card .signal-reason,.signal-reason{font-size:14px!important}
+ .notice,.hint{font-size:14px!important}.date-pair{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+ .date-pair input[type=date]{width:100%;min-width:0;min-height:46px}
+}
+@media(max-width:420px){.tabs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
 </body>
 </html>
