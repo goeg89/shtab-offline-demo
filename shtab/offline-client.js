@@ -76,9 +76,9 @@
   window.google={script:{run:runner(null,null)}};
   document.addEventListener('DOMContentLoaded',()=>{
     const panel=document.createElement('section');panel.className='offline-panel';
-    panel.innerHTML='<strong>Офлайн и синхронизация</strong><p id="offline-status" role="status">Открываем локальную копию…</p><div><button type="button" id="offline-enable">Разрешить офлайн на этом устройстве</button><button type="button" id="offline-connect">Подключить Google</button><button type="button" id="offline-sync">Отправить и обновить</button></div><details><summary>Сохранённые действия</summary><div id="offline-queue"></div></details>';
+    panel.innerHTML='<strong>Офлайн и синхронизация</strong><p id="offline-status" role="status">Открываем локальную копию…</p><p id="offline-shell">Сохраняем оболочку приложения…</p><div><button type="button" id="offline-enable">Разрешить офлайн на этом устройстве</button><button type="button" id="offline-connect">Подключить Google</button><button type="button" id="offline-sync">Отправить и обновить</button></div><details><summary>Сохранённые действия</summary><div id="offline-queue"></div></details>';
     document.querySelector('.app').prepend(panel);
-    document.getElementById('offline-enable').onclick=async()=>{try{await initialized;await HQOfflineStore.enable();await persist();message('На этом устройстве включён доступ без повторной фразы. Данные и очередь хранятся зашифрованными.');}catch(_){message('Не удалось включить локальное хранение.');}};
+    document.getElementById('offline-enable').onclick=async()=>{try{await initialized;await HQOfflineStore.enable();await persist();document.getElementById('offline-enable').hidden=true;message(state.data?'Данные и очередь зашифрованы на этом устройстве. Можно работать без интернета.':'Офлайн включён. Подключи Google для первой загрузки дел.');}catch(_){message('Не удалось включить локальное хранение.');}};
     document.getElementById('offline-connect').onclick=()=>{message(transport.connect()?'Вернись из окна Google. Первая загрузка начнётся автоматически.':'Разреши открытие окна Google и повтори.');};
     document.getElementById('offline-sync').onclick=()=>void sync();
     document.addEventListener('input',event=>{if(event.target.matches('textarea,input:not([type="search"]):not([type="checkbox"])'))dirty=true;});
@@ -93,8 +93,8 @@
         }
       }
     };
-    initialized.then(status);
-    if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(()=>message('Оболочка пока не сохранена для офлайн-запуска. Обнови с интернетом.'));
+    initialized.then(()=>{document.getElementById('offline-enable').hidden=HQOfflineStore.enabled();status();});
+    if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js',{scope:'./'}).then(()=>navigator.serviceWorker.ready).then(()=>{document.getElementById('offline-shell').textContent='Оболочка готова к запуску без интернета.';}).catch(()=>{document.getElementById('offline-shell').textContent='Оболочка не сохранена. Обнови страницу с интернетом.';});
   });
   window.addEventListener('online',()=>void sync());window.addEventListener('offline',status);
   setInterval(()=>{if(!document.hidden)void sync();},15000);
