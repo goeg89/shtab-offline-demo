@@ -1,4 +1,4 @@
-const CACHE='shtab-full-offline-4';
+const CACHE='shtab-full-offline-5';
 const FILES=['./','./index.html','./offline-store.js','./offline-model.js','./offline-client.js','./transport.js','./manifest.webmanifest'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES.map(p=>new Request(p,{cache:'reload'})))).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil((async()=>{for(const k of await caches.keys())if(k.startsWith('shtab-full-offline-')&&k!==CACHE)await caches.delete(k);await self.clients.claim();})()));

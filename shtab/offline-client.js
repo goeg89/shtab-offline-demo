@@ -2,14 +2,15 @@
   'use strict';
   const endpoint='https://script.google.com/macros/s/AKfycbzrOJxhfdcZqYDf-Y0fgVkEDOi18WirThrVWApQdXJ5dPYnIuDU2rtQNpu4QknJAeiiDg/exec';
   const transport=HQOfflineTransport.createTransport(window,endpoint);
-  let state={data:null,acts:{},queue:[],review:[]},chain=Promise.resolve(),syncing=false,dirty=false;
-  const initialized=HQOfflineStore.read().then(saved=>{if(saved)state=saved;}).catch(()=>{message('Не удалось открыть локальную копию. Подключись к Google для просмотра данных.');});
+  let state={data:null,acts:{},queue:[],review:[]},chain=Promise.resolve(),syncing=false,dirty=false,storageDamaged=false;
+  const initialized=HQOfflineStore.read().then(saved=>{if(saved)state=saved;}).catch(()=>{storageDamaged=true;message('Локальная копия не читается. Перезапись остановлена, сохранённые данные оставлены на устройстве.');});
   function copy(value){return JSON.parse(JSON.stringify(value));}
   function message(text){const node=document.getElementById('offline-status');if(node)node.textContent=text;}
   function locked(fn){const next=chain.then(fn);chain=next.catch(()=>{});return next;}
-  async function persist(){if(HQOfflineStore.enabled())await HQOfflineStore.write(state);}
+  async function persist(){if(storageDamaged)throw Error('OFFLINE_STORAGE_DAMAGED');if(HQOfflineStore.enabled())await HQOfflineStore.write(state);}
   function view(){let result=copy(state.data);for(const op of state.queue)result=HQOfflineModel.project(result,op);return result;}
   function status(){
+    if(storageDamaged)return message('Локальная копия не читается. Перезапись остановлена, сохранённые данные оставлены на устройстве.');
     if(state.queue.some(op=>op.status==='conflict'||op.status==='uncertain'))return message('Есть правка, требующая проверки. Открой очередь.');
     if(state.queue.length)return message('На устройстве сохранено действий: '+state.queue.length+'. Ожидают отправки.');
     if(!navigator.onLine)return message('Без интернета. Открыта последняя сохранённая копия.');
