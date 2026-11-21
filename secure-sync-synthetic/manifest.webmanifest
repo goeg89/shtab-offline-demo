@@ -1,0 +1,9 @@
+{
+  "name": "Мои дела · тест синхронизации",
+  "short_name": "Мои дела · тест",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#edf2f8",
+  "theme_color": "#18395f"
+}
