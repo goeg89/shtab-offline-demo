@@ -1,4 +1,4 @@
-/* OFFLINE-SECURE-0.9.2-quickview-safe-restore-pre (quick view opt-in + non-destructive backup restore; compatible vault 0.9).
+/* OFFLINE-SECURE-0.9.3-trusted-device-pre (optional trusted-device offline view/edit; compatible vault 0.9).
  * Public static app; private snapshots and local drafts are encrypted in IndexedDB.
  * NO Google Sheets writes, API calls, background sync, plaintext in storage.
  * Data from an unlocked vault lives briefly in memory until background/lock.
@@ -30,6 +30,7 @@
     'edit-title','case-edit-fields','event-edit-fields','edit-task','edit-date',
     'edit-result','save-edit','cancel-edit','status','sw-status',
     'quick-controls','quick-note','quick-status','quick-enable','quick-disable','quick-disable-locked',
+    'trust-enable','trust-open-locked',
     'edit-auth','edit-pass','edit-authorize','edit-auth-cancel'];
   const el={};ids.forEach(id=>{el[id]=document.getElementById(id);});
 
@@ -44,6 +45,7 @@
   let busy=false;
   let generation=0;
   let quickEnabled=false;
+  let trustedEditEnabled=false;
   let quickView=false;
   let manualLock=false;
   let pendingEdit=null;
@@ -234,17 +236,29 @@
     el['stored-note'].textContent=envelope?('Снимок: '+String(envelope.createdAt||'').slice(0,10)+
       '. Хранится зашифрованным. Режим без ввода фразы включается только по желанию.') : '';
     el['quick-disable-locked'].hidden=!quickEnabled||!envelope;
+    el['trust-open-locked'].hidden=!envelope||!trustedEditEnabled;
   }
   function refreshQuickUi(){
     el['quick-controls'].hidden=!snapshot;
     el['quick-enable'].hidden=quickEnabled||quickView;
+    // In legacy quick-view, this button asks for the original phrase once and then upgrades trust.
+    el['trust-enable'].hidden=!snapshot||trustedEditEnabled;
+    el['trust-enable'].textContent=quickView?
+      'Включить полный доступ (последний раз ввести фразу)':
+      'Разрешить просмотр и правки без пароля на этом устройстве';
     el['quick-disable'].hidden=!quickEnabled;
+    el['quick-disable'].textContent=trustedEditEnabled?
+      'Отключить доверенное устройство — снова требовать фразу':
+      'Отключить быстрый просмотр — снова требовать фразу';
     el['quick-note'].hidden=!quickView;
-    if(snapshot){el['quick-status'].textContent=quickEnabled?
-      (quickView?'Быстрый просмотр включён · только чтение. Для изменения нужна фраза.':
-      'Быстрый просмотр на этом iPhone включён. После нового запуска список дел откроется автоматически.'):
-      'Быстрый просмотр выключен — при запуске необходима парольная фраза.';}
+    if(snapshot){el['quick-status'].textContent=trustedEditEnabled?
+      'Доверенное устройство: просмотр и локальные правки без фразы, в том числе после перезапуска.':
+      quickEnabled?
+        (quickView?'Быстрый просмотр включён · только чтение. Для изменения нужна фраза.':
+        'Быстрый просмотр включён. После нового запуска список дел откроется автоматически; для правок нужна фраза.'):
+        'Автовход выключен. Можно разрешить этому устройству просмотр и правки без фразы.';}
     el['journal-tools'].hidden=quickView;
+    el.lock.textContent=trustedEditEnabled?'Скрыть экран':'Заблокировать';
   }
   function fmtDate(s){return /^\d{4}-\d{2}-\d{2}$/.test(s)?s.slice(8,10)+'.'+s.slice(5,7)+'.'+s.slice(0,4):(s||'—');}
   function label(card,name,v){if(v==='')return;const p=document.createElement('p');p.textContent=name+v;card.appendChild(p);}
@@ -445,7 +459,8 @@
     el.setup.hidden=true;el['unlock-zone'].hidden=true;el.viewer.hidden=false;
     mode='cases';offset=0;el.query.value='';render();
     notify(readOnly?'Дела открыты автоматически в режиме просмотра. Для правок введи парольную фразу.':
-      'Офлайн-копия открыта. Правки сохраняются на iPhone в зашифрованном виде.','success');
+      trustedEditEnabled?'Доверенное устройство: просмотр и локальные правки доступны без фразы. В CRM ничего не отправляется.':
+      'Офлайн-копия открыта. Правки сохраняются на устройстве в зашифрованном виде.','success');
     return true;
   }
   async function handleUnlock(){
@@ -461,24 +476,25 @@
   }
   function validQuickRecord(r,id){
     return !!r&&r.format==='shtab-quick-view-key-v1'&&r.snapshotId===id&&
+      (r.access===undefined||r.access==='view'||r.access==='full')&&
       r.key?.type==='secret'&&r.key?.algorithm?.name==='AES-GCM'&&
       r.key.extractable===false&&Array.isArray(r.key.usages)&&
-      r.key.usages.includes('decrypt');
+      r.key.usages.includes('decrypt')&&r.key.usages.includes('encrypt');
   }
   async function tryQuickUnlock(){
     if(!envelope||manualLock||busy||snapshot||document.hidden)return;
     busy=true;const current=generation;
     try{
       const saved=await getStored('quick');
-      if(!saved){quickEnabled=false;showStored();return;}
+      if(!saved){quickEnabled=false;trustedEditEnabled=false;showStored();return;}
       const id=await getSnapshotId(envelope);
       if(!validQuickRecord(saved,id)){
-        quickEnabled=false;await deleteStored('quick');showStored();
+        quickEnabled=false;trustedEditEnabled=false;await deleteStored('quick');showStored();
         if(current===generation)notify('Быстрый доступ устарел или недоступен; введи парольную фразу. Данные сохранены.','error');
         return;
       }
-      quickEnabled=true;showStored();
-      await openWithKey(saved.key,true,current);
+      quickEnabled=true;trustedEditEnabled=saved.access==='full';showStored();
+      await openWithKey(saved.key,!trustedEditEnabled,current);
     }catch(_){
       if(current===generation)notify('Быстрый просмотр не открылся. Введи обычную парольную фразу, данные сохранены.','error');
     }finally{busy=false;}
@@ -488,25 +504,68 @@
     if(!window.confirm('Включить автоматический просмотр дел на этом iPhone? Любой человек с доступом к разблокированному устройству сможет просматривать данные без парольной фразы. Локальный неэкспортируемый ключ сохранится в хранилище этого приложения. Для правок фраза по-прежнему нужна.'))return;
     busy=true;el['quick-enable'].disabled=true;
     try{
-      const item={format:'shtab-quick-view-key-v1',snapshotId:snapshotId,key:cryptoKey};
+      const item={format:'shtab-quick-view-key-v1',snapshotId:snapshotId,key:cryptoKey,access:'view'};
       await store('quick',item);await deleteStored('quick-paused');manualLock=false;
       const verify=await getStored('quick');
       if(!validQuickRecord(verify,snapshotId))fail('QUICK_NOT_SUPPORTED');
-      quickEnabled=true;refreshQuickUi();showStored();
-      notify('Быстрый просмотр включён. При следующем запуске дела будут открываться автоматически; правки требуют фразу.','success');
+      quickEnabled=true;trustedEditEnabled=false;refreshQuickUi();showStored();
+      notify('Быстрый просмотр включён. При следующем запуске дела откроются автоматически; для правок нужна фраза.','success');
     }catch(_){
       try{await deleteStored('quick');}catch(__){}
-      quickEnabled=false;refreshQuickUi();showStored();
+      quickEnabled=false;trustedEditEnabled=false;refreshQuickUi();showStored();
       notify(errorMessage('QUICK_NOT_SUPPORTED'),'error');
     }finally{busy=false;el['quick-enable'].disabled=false;}
+  }
+  async function handleTrustEnable(){
+    if(busy||!snapshot||!envelope||trustedEditEnabled)return;
+    if(quickView){
+      pendingEdit={kind:'trusted-setup'};
+      el['edit-pass'].value='';el['edit-auth'].hidden=false;
+      el['edit-auth'].scrollIntoView({behavior:'smooth',block:'start'});
+      notify('Чтобы включить постоянный просмотр И редактирование на этом устройстве, введи исходную фразу последний раз.','');
+      return;
+    }
+    if(!cryptoKey)return;
+    if(!window.confirm('ДОВЕРЕННОЕ УСТРОЙСТВО: разрешить на этом устройстве просмотр И РЕДАКТИРОВАНИЕ без повторного ввода парольной фразы?\n\nЛюбой человек или вредоносный код с доступом к разблокированному устройству/данным этого сайта сможет просматривать и локально менять записи. Это НЕ повторная Google-авторизация и НЕ Face ID.\n\nВключать только на личном устройстве с кодом блокировки. При очистке данных браузера доверие будет потеряно.'))return;
+    busy=true;el['trust-enable'].disabled=true;
+    let previous=null;
+    try{
+      previous=await getStored('quick');
+      const record={format:'shtab-quick-view-key-v1',snapshotId:snapshotId,
+        key:cryptoKey,access:'full'};
+      await store('quick',record);
+      const verified=await getStored('quick');
+      if(!validQuickRecord(verified,snapshotId)||verified.access!=='full')fail('QUICK_NOT_SUPPORTED');
+      await deleteStored('quick-paused');
+      quickEnabled=true;trustedEditEnabled=true;manualLock=false;
+      refreshQuickUi();showStored();
+      notify('Доверенное устройство включено. При запуске дела откроются автоматически, редактирование будет без ввода фразы. Данные остаются локальными.','success');
+    }catch(_){
+      // Roll back a partial opt-in without deleting the original encrypted vault or journal.
+      const saved=await getStored('quick').catch(()=>null);
+      if(saved&&saved.access==='full'){
+        try{
+          if(previous&&validQuickRecord(previous,snapshotId))await store('quick',previous);
+          else await deleteStored('quick');
+        }catch(__){} // Never delete the vault or any drafts during an authorization failure.
+      }
+      const restored=await getStored('quick').catch(()=>null);
+      quickEnabled=!!(restored&&validQuickRecord(restored,snapshotId));
+      trustedEditEnabled=!!(quickEnabled&&restored.access==='full');
+      refreshQuickUi();showStored();
+      notify(errorMessage('QUICK_NOT_SUPPORTED'),'error');
+    }finally{busy=false;el['trust-enable'].disabled=false;}
   }
   async function handleQuickDisable(){
     if(busy)return;
     busy=true;
     try{
-      await deleteStored('quick');await deleteStored('quick-paused');quickEnabled=false;manualLock=false;
-      if(quickView){lockScreen(true);notify('Быстрый просмотр выключен. Для следующего входа нужна фраза.','success');}
-      else{refreshQuickUi();showStored();notify('Быстрый просмотр выключен. Зашифрованная копия и журнал сохранены.','success');}
+      const wasAutoSession=quickView||trustedEditEnabled;
+      await deleteStored('quick');await deleteStored('quick-paused');
+      quickEnabled=false;trustedEditEnabled=false;manualLock=false;
+      if(wasAutoSession){lockScreen(true);showStored();
+        notify('Доверие к устройству отозвано. Для входа снова нужна фраза. Копия и журнал сохранены.','success');}
+      else{refreshQuickUi();showStored();notify('Автоматический вход выключен. Зашифрованная копия и журнал сохранены.','success');}
     }catch(_){notify(errorMessage('STORAGE'),'error');}
     finally{busy=false;}
   }
@@ -520,8 +579,13 @@
       await decryptVault(envelope,key);
       if(current!==generation||document.hidden)return;
       cryptoKey=key;quickView=false;pendingEdit=null;el['edit-auth'].hidden=true;
-      busy=false;render();openEditor(requested.kind,requested.id);
-      notify('Редактирование разблокировано на время текущего сеанса.','success');
+      busy=false;render();
+      if(requested.kind==='trusted-setup'){
+        await handleTrustEnable();
+      }else{
+        openEditor(requested.kind,requested.id);
+        notify('Редактирование разблокировано на время текущего сеанса.','success');
+      }
     }catch(_){if(current===generation)notify('Парольная фраза неверная. Данные не изменены.','error');}
     finally{phrase='';el['edit-pass'].value='';busy=false;el['edit-authorize'].disabled=false;}
   }
@@ -529,7 +593,7 @@
     if(busy||!envelope)return;
     if(!window.confirm('Удалить зашифрованную копию И ВСЕ локальные правки с iPhone? Это нельзя отменить. Сначала сохрани журнал в «Файлы».'))return;
     busy=true;
-    try{await eraseAll();envelope=null;quickEnabled=false;manualLock=false;lockScreen();showStored();notify('Локальная копия и все правки удалены.','success');}
+    try{await eraseAll();envelope=null;quickEnabled=false;trustedEditEnabled=false;manualLock=false;lockScreen();showStored();notify('Локальная копия и все правки удалены.','success');}
     catch(e){notify(errorMessage(e.code||'STORAGE'),'error');}
     finally{busy=false;}
   }
@@ -610,6 +674,12 @@
   el.unlock.addEventListener('click',handleUnlock);
   el.delete.addEventListener('click',handleDelete);
   el.lock.addEventListener('click',async ()=>{
+    // Full trusted access deliberately hides, not permanently password-locks.
+    if(trustedEditEnabled){
+      lockScreen(false);showStored();
+      notify('Экран скрыт. На доверенном устройстве можно снова открыть дела и редактирование без фразы.','');
+      return;
+    }
     lockScreen(true);
     try{if(quickEnabled)await store('quick-paused',true);}catch(_){
       notify('Экран заблокирован, но не удалось сохранить запрет автовхода после перезапуска.','error');return;
@@ -621,6 +691,8 @@
   el.backup.addEventListener('click',handleBackup);
   el.restore.addEventListener('click',handleRestore);
   el['quick-enable'].addEventListener('click',handleQuickEnable);
+  el['trust-enable'].addEventListener('click',handleTrustEnable);
+  el['trust-open-locked'].addEventListener('click',()=>{if(!busy)void tryQuickUnlock();});
   el['quick-disable'].addEventListener('click',handleQuickDisable);
   el['quick-disable-locked'].addEventListener('click',handleQuickDisable);
   el['edit-authorize'].addEventListener('click',handleEditAuthorize);
@@ -643,8 +715,9 @@
     if(!supportsCrypto()){notify('Для этого приложения необходимы HTTPS, WebCrypto и IndexedDB.','error');return;}
     try{
       envelope=await getStored('encrypted');if(envelope)validateEnvelope(envelope);
-      quickEnabled=!!(envelope&&await getStored('quick'));
-      manualLock=quickEnabled&&(await getStored('quick-paused'))===true;
+      const savedQuick=envelope?await getStored('quick'):null;
+      quickEnabled=!!savedQuick;trustedEditEnabled=savedQuick?.access==='full';
+      manualLock=quickEnabled&&!trustedEditEnabled&&(await getStored('quick-paused'))===true;
       showStored();notify(envelope?'Шифрованная копия найдена. Проверяю быстрый просмотр…':
         'Ожидается файл 0.9 из тестового Web App.','');
       if(envelope&&!manualLock)await tryQuickUnlock();
