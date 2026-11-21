@@ -1,6 +1,6 @@
 (function(){
   'use strict';
-  const endpoint='https://script.google.com/macros/s/AKfycbyYagX9N4SCSgdSdYAtXmJmtMOqgjufQRZvmwbkFVzBUrPHATLjDcSBU0aqmbjvk4lmGw/exec';
+  const endpoint='https://script.google.com/macros/s/AKfycbzrOJxhfdcZqYDf-Y0fgVkEDOi18WirThrVWApQdXJ5dPYnIuDU2rtQNpu4QknJAeiiDg/exec';
   const transport=HQOfflineTransport.createTransport(window,endpoint);
   let state={data:null,acts:{},queue:[],review:[]},chain=Promise.resolve(),syncing=false,dirty=false;
   const initialized=HQOfflineStore.read().then(saved=>{if(saved)state=saved;}).catch(()=>{message('Не удалось открыть локальную копию. Подключись к Google для просмотра данных.');});
