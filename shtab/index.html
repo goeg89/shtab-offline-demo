@@ -1,0 +1,4577 @@
+<!DOCTYPE html>
+<!-- FOCUS-PRIORITY-1.3.2-pre (18.11.2026): шрифты «Требует внимания» приведены к «Фокусу на сегодня»; ядро без изменений. -->
+<html lang="ru">
+<head><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-src 'none'">
+  <base target="_top">
+  <meta charset="utf-8">
+  <style>
+    :root {
+      --blue: #2563eb;
+      --blue-soft: #dbeafe;
+      --navy: #1e3a8a;
+      --green: #0f9f61;
+      --red: #dc2626;
+      --text: #202124;
+      --muted: #5f6368;
+      --line: #cfd8e3;
+      --panel: #f3f6ff;
+      --white: #fff;
+      --radius: 12px;
+      --shadow: 0 8px 22px rgba(37, 99, 235, .10),
+        0 2px 10px rgba(30, 58, 138, .08);
+      --grad-hero: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+      --grad-focus: linear-gradient(135deg, #ffe08a 0%, #ffbf47 100%);
+      --grad-attention: linear-gradient(135deg, #fecaca 0%, #fda4af 100%);
+      --grad-waiting: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
+      --grad-mode: linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 100%);
+      --grad-workspace: linear-gradient(180deg, #ffffff 0%, #eef5ff 100%);
+      --grad-case: linear-gradient(135deg, #d9f0ff 0%, #c5e4ff 100%);
+      --grad-acts: linear-gradient(135deg, #d7ebff 0%, #bfdcff 100%);
+      --grad-event: linear-gradient(135deg, #d9e9ff 0%, #c6dbff 100%);
+      --grad-task: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+      --grad-level: linear-gradient(135deg, #dbeafe 0%, #ddd6fe 100%);
+      --grad-week: linear-gradient(135deg, #cffafe 0%, #bae6fd 100%);
+      --grad-milestone: linear-gradient(135deg, #ccfbf1 0%, #a7f3d0 100%);
+      --grad-achieve: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      --pattern-light: repeating-linear-gradient(135deg, rgba(255,255,255,.28) 0 10px, rgba(255,255,255,0) 10px 20px);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      background: var(--white);
+      font: 13px/1.45 Arial, sans-serif;
+    }
+
+    .app { padding: 14px; }
+
+    .hero {
+      margin: -14px -14px 14px;
+      padding: 16px 14px 13px;
+      background: var(--pattern-light), var(--grad-hero);
+      border-bottom: 1px solid #7aa2ff;
+      box-shadow: 0 8px 18px rgba(37, 99, 235, .18);
+    }
+
+    .hero h1 {
+      margin: 0;
+      color: #fff;
+      font-size: 19px;
+      letter-spacing: .02em;
+      text-shadow: 0 1px 1px rgba(0,0,0,.12);
+    }
+
+    .hero p {
+      margin: 4px 0 0;
+      color: rgba(255,255,255,.92);
+      font-size: 12px;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .metric {
+      padding: 10px 8px;
+      text-align: center;
+      background: linear-gradient(180deg, #ffffff 0%, #edf4ff 100%);
+      border: 1px solid #b8d0ff;
+      border-radius: 10px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.7);
+    }
+
+    .metric-value {
+      color: var(--navy);
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .level-card {
+      margin-bottom: 14px;
+      padding: 12px;
+      background: var(--pattern-light), var(--grad-level);
+      border: 1px solid #b8c8ff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .level-head,
+    .level-foot {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .level-title {
+      color: var(--navy);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .level-total {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .progress-track {
+      height: 7px;
+      margin: 9px 0 7px;
+      overflow: hidden;
+      background: #e8eaed;
+      border-radius: 999px;
+    }
+
+    .progress-bar {
+      width: 0;
+      height: 100%;
+      background: var(--blue);
+      border-radius: inherit;
+      transition: width .25s ease;
+    }
+
+    .level-foot {
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .fixed-reward {
+      margin: -2px 0 12px;
+      padding: 9px 10px;
+      color: #0b6b45;
+      background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+      border: 1px solid #6ee7b7;
+      border-radius: 9px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .follow-up-card {
+      margin: 13px 0;
+      padding: 11px;
+      background: var(--pattern-light), linear-gradient(135deg, #eef6ff 0%, #dbeafe 100%);
+      border: 1px solid #9ec5ff;
+      border-radius: 10px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
+    }
+
+    .follow-up-title {
+      color: var(--navy);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .follow-up-hint {
+      margin: 3px 0 10px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .week-card {
+      margin-bottom: 14px;
+      background: var(--pattern-light), var(--grad-week);
+      border: 1px solid #86d5f5;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .week-card summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 11px;
+      cursor: pointer;
+      list-style: none;
+    }
+
+    .week-card summary::-webkit-details-marker { display: none; }
+
+    .week-heading {
+      color: #3c4043;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .week-caption {
+      display: block;
+      margin-top: 1px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 400;
+    }
+
+    .week-xp {
+      color: var(--blue);
+      font-size: 14px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .recent-list {
+      border-top: 1px solid #eceff1;
+    }
+
+    .recent-item {
+      padding: 9px 11px;
+      border-bottom: 1px solid #f1f3f4;
+    }
+
+    .recent-item:last-child { border-bottom: 0; }
+
+    .recent-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .recent-xp {
+      color: var(--green);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .recent-result {
+      margin-top: 3px;
+      color: #3c4043;
+      font-size: 11px;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .recent-client {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 10px;
+      overflow-wrap: anywhere;
+    }
+
+    .milestone-card {
+      margin-bottom: 14px;
+      padding: 11px;
+      background: var(--pattern-light), var(--grad-milestone);
+      border: 1px solid #7dd3ae;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .milestone-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .milestone-count {
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    .milestone-title {
+      margin-top: 5px;
+      color: var(--navy);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .milestone-description {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .milestone-track {
+      height: 6px;
+      margin: 9px 0 6px;
+      overflow: hidden;
+      background: #dfe7f3;
+      border-radius: 999px;
+    }
+
+    .milestone-bar {
+      width: 0;
+      height: 100%;
+      background: #5f8fca;
+      border-radius: inherit;
+      transition: width .25s ease;
+    }
+
+    .milestone-foot {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .achievements-card {
+      margin-bottom: 14px;
+      overflow: hidden;
+      background: linear-gradient(180deg, #fffdf4 0%, #fff7db 100%);
+      border: 1px solid #f0c34c;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .achievements-card summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 11px;
+      color: #6d4c00;
+      cursor: pointer;
+      list-style: none;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .achievements-card summary::-webkit-details-marker { display: none; }
+
+    .achievement-count {
+      padding: 2px 7px;
+      color: #6d4c00;
+      background: #fff4ce;
+      border-radius: 999px;
+      font-size: 10px;
+    }
+
+    .achievement-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 7px;
+      padding: 9px;
+      background: #fffdf7;
+      border-top: 1px solid #f3e8c5;
+    }
+
+    .achievement-item {
+      min-width: 0;
+      padding: 9px;
+      background: var(--white);
+      border: 1px solid #eceff1;
+      border-radius: 10px;
+    }
+
+    .achievement-item:last-child:nth-child(odd) { grid-column: 1 / -1; }
+
+    .achievement-item.unlocked {
+      background: linear-gradient(145deg, #fffdf7, #fff8df);
+      border-color: #ead18a;
+      box-shadow: 0 1px 4px rgba(138, 75, 0, .08);
+    }
+
+    .achievement-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      margin-bottom: 6px;
+      background: var(--panel);
+      border-radius: 50%;
+      font-size: 16px;
+      filter: grayscale(1);
+      opacity: .48;
+    }
+
+    .achievement-item.unlocked .achievement-icon {
+      background: #fff0bd;
+      filter: none;
+      opacity: 1;
+    }
+
+    .achievement-title {
+      color: #3c4043;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .achievement-description {
+      min-height: 25px;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.3;
+    }
+
+    .achievement-track {
+      height: 4px;
+      margin: 7px 0 5px;
+      overflow: hidden;
+      background: #e8eaed;
+      border-radius: 999px;
+    }
+
+    .achievement-bar {
+      height: 100%;
+      background: #9aa0a6;
+      border-radius: inherit;
+    }
+
+    .achievement-item.unlocked .achievement-bar { background: #f9ab00; }
+
+    .achievement-foot {
+      display: flex;
+      justify-content: space-between;
+      gap: 5px;
+      color: var(--muted);
+      font-size: 8px;
+    }
+
+    .achievement-status {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .focus-card {
+      margin-bottom: 14px;
+      overflow: hidden;
+      background: #fffdf7;
+      border: 1px solid #f3dfaa;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .focus-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 11px;
+      background: #fff9e8;
+      cursor: pointer;
+      list-style: none;
+    }
+
+    .focus-head::-webkit-details-marker { display: none; }
+    .focus-head::marker { content: ''; }
+    .focus-card[open] > .focus-head { border-bottom: 1px solid #f5e7bd; }
+
+    .focus-head::after {
+      flex: 0 0 auto;
+      align-self: center;
+      width: 7px;
+      height: 7px;
+      border-right: 2px solid #8a4b00;
+      border-bottom: 2px solid #8a4b00;
+      content: '';
+      transform: rotate(45deg);
+      transition: transform .15s ease;
+    }
+
+    .focus-card[open] > .focus-head::after {
+      transform: rotate(225deg);
+    }
+
+    .focus-title {
+      color: #6d4c00;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .focus-caption {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .focus-score {
+      flex: 0 0 auto;
+      color: #8a4b00;
+      text-align: right;
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .focus-list { background: var(--white); }
+
+    .focus-item {
+      position: relative;
+      padding: 9px 10px 9px 14px;
+      border-bottom: 1px solid #f1f3f4;
+    }
+
+    .focus-item::before {
+      position: absolute;
+      top: 9px;
+      bottom: 9px;
+      left: 0;
+      width: 3px;
+      content: '';
+      background: #f9ab00;
+      border-radius: 0 4px 4px 0;
+    }
+
+    .focus-item.event::before { background: #7e57c2; }
+    .focus-item.legal::before { background: #e67e00; }
+    .focus-item.overdue::before { background: var(--red); }
+    .focus-item:last-child { border-bottom: 0; }
+
+    .focus-item-head {
+      display: flex;
+      align-items: flex-start;
+      gap: 7px;
+    }
+
+    .focus-icon {
+      flex: 0 0 auto;
+      width: 19px;
+      text-align: center;
+      font-size: 13px;
+    }
+
+    .focus-body { min-width: 0; flex: 1; }
+
+    .focus-main {
+      color: #3c4043;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .focus-meta {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 10px;
+      overflow-wrap: anywhere;
+    }
+
+    .focus-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 7px;
+      padding-left: 26px;
+    }
+
+    .focus-more,
+    .focus-empty {
+      padding: 10px 11px;
+      color: var(--muted);
+      background: var(--white);
+      border-top: 1px solid #f1f3f4;
+      font-size: 10px;
+    }
+
+    .focus-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 10px;
+      color: var(--muted);
+      background: #fffdf7;
+      border-top: 1px solid #f5e7bd;
+      font-size: 10px;
+    }
+
+    .link-button {
+      padding: 0;
+      color: #174ea6;
+      background: transparent;
+      border: 0;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 700;
+    }
+
+    .focus-reschedule {
+      padding: 10px 11px;
+      background: #f8fbff;
+      border-top: 1px solid #d2e3fc;
+    }
+
+    .focus-reschedule-title {
+      margin-bottom: 7px;
+      color: #174ea6;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .focus-reschedule-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .focus-reschedule-row input { padding: 7px 8px; }
+
+    .weekly-review {
+      margin-bottom: 14px;
+      overflow: hidden;
+      background: linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%);
+      border: 1px solid #9fc2ff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .weekly-review summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 11px;
+      color: var(--navy);
+      cursor: pointer;
+      list-style: none;
+    }
+
+    .weekly-review summary::-webkit-details-marker { display: none; }
+
+    .weekly-review-heading {
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .weekly-review-period {
+      display: block;
+      margin-top: 1px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 400;
+    }
+
+    .weekly-review-xp {
+      color: var(--blue);
+      font-size: 14px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .weekly-review-body {
+      padding: 10px 11px 11px;
+      border-top: 1px solid #eceff1;
+    }
+
+    .weekly-comparison {
+      margin-bottom: 9px;
+      padding: 7px 8px;
+      color: var(--muted);
+      background: var(--panel);
+      border-radius: 8px;
+      font-size: 10px;
+    }
+
+    .weekly-comparison.positive { color: #137333; background: #e6f4ea; }
+    .weekly-comparison.negative { color: #a50e0e; background: #fce8e6; }
+
+    .weekly-metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 5px;
+      margin-bottom: 10px;
+    }
+
+    .weekly-metric {
+      min-width: 0;
+      padding: 7px 3px;
+      text-align: center;
+      background: #f8fbff;
+      border-radius: 8px;
+    }
+
+    .weekly-metric strong {
+      display: block;
+      color: var(--navy);
+      font-size: 14px;
+    }
+
+    .weekly-metric span {
+      display: block;
+      margin-top: 1px;
+      color: var(--muted);
+      font-size: 8px;
+      line-height: 1.2;
+    }
+
+    .weekly-goal-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .weekly-goal-track {
+      height: 6px;
+      margin: 5px 0 10px;
+      overflow: hidden;
+      background: #e8eaed;
+      border-radius: 999px;
+    }
+
+    .weekly-goal-bar {
+      width: 0;
+      height: 100%;
+      background: linear-gradient(90deg, #1a73e8, #6c8ee3);
+      border-radius: inherit;
+      transition: width .25s ease;
+    }
+
+    .weekly-chart {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      height: 72px;
+      align-items: end;
+    }
+
+    .weekly-day {
+      display: grid;
+      grid-template-rows: 12px 42px 12px;
+      gap: 2px;
+      min-width: 0;
+      color: var(--muted);
+      text-align: center;
+      font-size: 8px;
+    }
+
+    .weekly-day-xp { white-space: nowrap; }
+
+    .weekly-day-bar-wrap {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      height: 42px;
+    }
+
+    .weekly-day-bar {
+      width: 70%;
+      min-height: 2px;
+      background: #aecbfa;
+      border-radius: 4px 4px 2px 2px;
+    }
+
+    .weekly-day.today { color: #174ea6; font-weight: 700; }
+    .weekly-day.today .weekly-day-bar { background: var(--blue); }
+    .weekly-day.future { opacity: .4; }
+
+    .weekly-best {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 10px;
+      text-align: center;
+    }
+
+    .signal-card {
+      margin-bottom: 10px;
+      overflow: hidden;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+      border: 1px solid #d4e1f5;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .signal-card.attention-card { border-color: #f39ba4; background: linear-gradient(180deg, #fff7f7 0%, #ffe9ec 100%); }
+    .signal-card.waiting-card { border-color: #8ec5ff; background: linear-gradient(180deg, #f7fbff 0%, #e8f4ff 100%); }
+
+    .signal-card summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 11px;
+      cursor: pointer;
+      list-style: none;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .signal-card summary::-webkit-details-marker { display: none; }
+    .attention-card summary { color: #8f1020; background: var(--pattern-light), var(--grad-attention); }
+    .waiting-card summary { color: #114f8b; background: var(--pattern-light), var(--grad-waiting); }
+
+    .signal-count {
+      min-width: 22px;
+      padding: 2px 7px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, .8);
+      border-radius: 999px;
+      text-align: center;
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .signal-list {
+      max-height: 290px;
+      overflow-y: auto;
+      border-top: 1px solid #eceff1;
+    }
+
+    .signal-item {
+      position: relative;
+      background: var(--white);
+      border-bottom: 1px solid #f1f3f4;
+    }
+
+    .signal-item:last-child { border-bottom: 0; }
+    .signal-item:hover { background: #f8fbff; }
+
+    .signal-item::before {
+      position: absolute;
+      top: 8px;
+      bottom: 8px;
+      left: 0;
+      width: 3px;
+      content: '';
+      background: #aecbfa;
+      border-radius: 0 4px 4px 0;
+    }
+
+    .signal-item.priority-p1::before { background: #d93025; }
+    .signal-item.priority-p2::before { background: #f9ab00; }
+    .signal-item.priority-p3::before { background: #1a73e8; }
+
+    .signal-main {
+      display: block;
+      width: 100%;
+      padding: 9px 11px 7px 14px;
+      text-align: left;
+      background: transparent;
+      border: 0;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .signal-main:focus-visible,
+    .quick-action:focus-visible,
+    .mode-item:focus-visible,
+    .tab:focus-visible {
+      outline: 2px solid var(--blue);
+      outline-offset: -2px;
+    }
+
+    .signal-head {
+      display: flex;
+      align-items: flex-start;
+      gap: 7px;
+    }
+
+    .priority-badge {
+      flex: 0 0 auto;
+      padding: 2px 5px;
+      border-radius: 5px;
+      font-size: 9px;
+      font-weight: 700;
+    }
+
+    .priority-badge.p1 { color: #a50e0e; background: #fce8e6; }
+    .priority-badge.p2 { color: #8a4b00; background: #fef7e0; }
+    .priority-badge.p3 { color: #174ea6; background: var(--blue-soft); }
+
+    .signal-client {
+      color: #3c4043;
+      font-size: 11px;
+      font-weight: 700;
+      overflow-wrap: anywhere;
+    }
+
+    .signal-reason {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .signal-legal {
+      margin-top: 5px;
+      color: #92400e;
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .signal-task {
+      margin-top: 3px;
+      color: #3c4043;
+      font-size: 11px;
+      line-height: 1.35;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .signal-empty {
+      padding: 11px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .signal-actions {
+      display: flex;
+      gap: 6px;
+      padding: 0 11px 9px 14px;
+    }
+
+    .quick-action {
+      padding: 5px 8px;
+      color: #174ea6;
+      background: #f8fbff;
+      border: 1px solid #d2e3fc;
+      border-radius: 999px;
+      cursor: pointer;
+      font: inherit;
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .quick-action:hover {
+      background: var(--blue-soft);
+      border-color: #aecbfa;
+    }
+
+    .quick-action.muted {
+      color: var(--muted);
+      background: var(--white);
+      border-color: #dadce0;
+    }
+
+    .mode-card {
+      margin-bottom: 14px;
+      border: 1px solid #c6b8ff;
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, #fbf9ff 0%, #f3edff 100%);
+      box-shadow: var(--shadow);
+    }
+
+    .mode-card summary {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 11px;
+      color: #4c1d95;
+      background: var(--pattern-light), var(--grad-mode);
+      cursor: pointer;
+      list-style: none;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .mode-card summary::-webkit-details-marker { display: none; }
+
+    .mode-summary-count {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 400;
+    }
+
+    .mode-filters {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      padding: 0 9px 9px;
+    }
+
+    .mode-filter {
+      padding: 7px 6px;
+      color: var(--muted);
+      background: var(--panel);
+      border: 1px solid #eceff1;
+      border-radius: 8px;
+      cursor: pointer;
+      font: inherit;
+      font-size: 10px;
+    }
+
+    .mode-filter.active {
+      color: #174ea6;
+      background: var(--blue-soft);
+      border-color: #aecbfa;
+      font-weight: 700;
+    }
+
+    .mode-list {
+      max-height: 280px;
+      overflow-y: auto;
+      border-top: 1px solid #eceff1;
+    }
+
+    .mode-item {
+      display: block;
+      width: 100%;
+      padding: 9px 11px;
+      text-align: left;
+      background: var(--white);
+      border: 0;
+      border-bottom: 1px solid #f1f3f4;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .mode-item:last-child { border-bottom: 0; }
+    .mode-item:hover { background: #f8fbff; }
+
+    .mode-task {
+      color: #3c4043;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .mode-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .mode-deadline.overdue { color: var(--red); font-weight: 700; }
+    .mode-deadline.today { color: #b06000; font-weight: 700; }
+
+    .metric-label {
+      color: var(--muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .workspace-panel {
+      margin: 18px -6px 0;
+      padding: 13px 12px 16px;
+      background: linear-gradient(180deg, #ffffff 0%, #f3f8ff 100%);
+      border: 1px solid #b9d4ff;
+      border-radius: 14px;
+      box-shadow: 0 8px 22px rgba(37, 99, 235, .10);
+    }
+
+    .workspace-heading {
+      margin: 0 0 14px;
+      padding-bottom: 10px;
+      color: var(--navy);
+      border-bottom: 1px solid #dce6f2;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .field { margin-bottom: 11px; }
+
+    label,
+    .field-label {
+      display: block;
+      margin-bottom: 5px;
+      color: #3c4043;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 9px 10px;
+      color: var(--text);
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      outline: none;
+      font: inherit;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 2px rgba(26, 115, 232, .12);
+    }
+
+    textarea {
+      min-height: 78px;
+      resize: vertical;
+    }
+
+    .compact { min-height: 58px; }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+
+    .case-card {
+      display: none;
+      margin: 10px 0 14px;
+      padding: 11px;
+      background: var(--pattern-light), var(--grad-case);
+      border: 1px solid #8fc7ff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .case-card.visible { display: block; }
+
+    .acts-card { display: block; margin: 0 0 14px; padding: 11px; background: var(--pattern-light), var(--grad-acts); border: 1px solid #84b7ff; border-radius: var(--radius); box-shadow: var(--shadow); }
+    .acts-card summary { cursor: pointer; font-weight: 700; }
+    .acts-card-body { padding-top: 11px; }
+    .acts-last { margin-bottom: 9px; font-weight: 600; }
+    .acts-line { display: flex; justify-content: space-between; gap: 8px; padding: 5px 0; border-bottom: 1px solid #e5edf8; }
+    .acts-line span:last-child { text-align: right; }
+    .acts-close { margin-top: 13px; }
+    .acts-note { color: var(--muted); font-size: 12px; margin: 8px 0 0; }
+
+    .case-title {
+      margin-bottom: 6px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .case-line {
+      margin-top: 4px;
+      color: var(--muted);
+      white-space: pre-wrap;
+    }
+
+    .case-line strong {
+      color: #3c4043;
+      font-weight: 600;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 5px;
+      padding: 4px;
+      margin-bottom: 0;
+      background: linear-gradient(180deg, #dce9ff 0%, #cfe0ff 100%);
+      border-radius: 0 0 10px 10px;
+    }
+
+    .sticky-case-nav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      margin-bottom: 14px;
+      border: 1px solid #9bbcff;
+      border-radius: 10px;
+      background: linear-gradient(180deg, #ffffff 0%, #edf4ff 100%);
+      box-shadow: 0 6px 16px rgba(37, 99, 235, .16);
+    }
+
+    .sticky-case-bar {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+      padding: 7px 9px 5px;
+      border-bottom: 1px solid #e8eef5;
+    }
+
+    .sticky-case-prefix {
+      color: #5f6368;
+      font-size: 10px;
+      white-space: nowrap;
+    }
+
+    .sticky-case-name {
+      display: block;
+      min-width: 0;
+      flex: 1;
+      color: var(--navy);
+      font-size: 12px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .panel { scroll-margin-top: 94px; }
+
+    .case-extra-details {
+      margin-top: 7px;
+      padding-top: 6px;
+      border-top: 1px solid #e5e9ed;
+    }
+
+    .case-extra-details summary {
+      cursor: pointer;
+      color: var(--blue);
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .case-extra-details .case-line { margin-top: 7px; }
+
+    .bottom-rewards { margin: 18px 0 2px; }
+
+    .tab {
+      padding: 8px 4px;
+      color: var(--muted);
+      background: transparent;
+      border: 0;
+      border-radius: 7px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .tab.active {
+      color: #123d9a;
+      background: linear-gradient(180deg, #ffffff 0%, #f7faff 100%);
+      box-shadow: 0 2px 6px rgba(37, 99, 235, .18);
+    }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .difficulty {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 7px;
+    }
+
+    .difficulty input { display: none; }
+
+    .difficulty label {
+      min-height: 62px;
+      padding: 8px 5px;
+      text-align: center;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      cursor: pointer;
+    }
+
+    .difficulty input:checked + label {
+      color: #174ea6;
+      background: var(--blue-soft);
+      border-color: var(--blue);
+    }
+
+    .difficulty strong {
+      display: block;
+      font-size: 14px;
+    }
+
+    .difficulty span {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .check {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin: 9px 0 12px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .check input {
+      width: auto;
+      margin-top: 2px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 13px;
+    }
+
+    button.primary,
+    button.secondary,
+    button.danger {
+      flex: 1;
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 700;
+    }
+
+    button.primary {
+      color: #fff;
+      background: var(--blue);
+      border: 1px solid var(--blue);
+    }
+
+    button.secondary {
+      color: #174ea6;
+      background: var(--white);
+      border: 1px solid #aecbfa;
+    }
+
+    button.danger {
+      color: var(--red);
+      background: var(--white);
+      border: 1px solid #f1b8b3;
+    }
+
+    button:disabled {
+      cursor: default;
+      opacity: .55;
+    }
+
+    .section-title {
+      margin: 16px 0 9px;
+      padding-top: 12px;
+      border-top: 1px solid #eceff1;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .case-pair {
+      margin-bottom: 10px;
+      padding: 9px;
+      background: var(--panel);
+      border-radius: 9px;
+    }
+
+    .case-pair .row { margin-top: 7px; }
+    .case-link-control { display: flex; gap: 6px; min-width: 0; }
+    .case-link-control input { min-width: 0; flex: 1; }
+    button.case-open-link { flex: 0 0 auto; width: auto; padding: 8px 10px; }
+
+    .hint {
+      margin: -3px 0 10px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .notice {
+      margin-bottom: 12px;
+      padding: 10px 11px;
+      color: #174ea6;
+      background: var(--blue-soft);
+      border-radius: 9px;
+      font-size: 11px;
+    }
+
+    .absence-list {
+      display: grid;
+      gap: 7px;
+    }
+
+    .absence-item {
+      padding: 9px 10px;
+      background: var(--panel);
+      border: 1px solid #eceff1;
+      border-radius: 9px;
+      cursor: pointer;
+    }
+
+    .absence-dates {
+      font-weight: 700;
+    }
+
+    .absence-meta {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 11px;
+      white-space: pre-wrap;
+    }
+
+    .hidden { display: none !important; }
+
+    .loading {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #174ea6;
+      background: rgba(255, 255, 255, .86);
+      font-weight: 700;
+    }
+
+    .toast {
+      position: fixed;
+      right: 12px;
+      bottom: 12px;
+      left: 12px;
+      z-index: 30;
+      display: none;
+      padding: 11px 12px;
+      color: #fff;
+      background: #3c4043;
+      border-radius: 9px;
+      box-shadow: 0 3px 10px rgba(60, 64, 67, .3);
+    }
+
+    .toast.show { display: block; }
+    .toast.success { background: var(--green); }
+    .toast.error { background: var(--red); }
+    .toast.achievement { color: #3c2f00; background: #fbbc04; }
+
+    @media (max-width: 380px) {
+      .app { padding: 11px; }
+      .hero { margin: -11px -11px 12px; padding: 14px 11px 12px; }
+      .workspace-panel { margin: 20px -4px 0; padding: 12px 9px 14px; }
+      .summary { gap: 5px; }
+      .metric { padding: 8px 4px; }
+      .metric-value { font-size: 16px; }
+      .tabs { gap: 2px; }
+      .tab { padding: 8px 2px; font-size: 10px; }
+      .row { grid-template-columns: 1fr; }
+      .difficulty { gap: 4px; }
+      .difficulty label { padding: 7px 3px; }
+    }
+    /* Общая форма результатов события и текущей задачи. */
+    .event-task-card {
+      margin: 14px 0 12px;
+      padding: 12px 0 0;
+      border: 0;
+      border-top: 1px solid #e2e7ed;
+      background: transparent;
+    }
+    .event-task-card .field { margin: 9px 0; }
+    .event-task-current {
+      padding: 4px 0 6px;
+      color: var(--muted);
+      font-size: 11px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+    .event-task-card .check { margin: 10px 0; }
+    .event-task-card .hint { margin-top: 8px; }
+    .event-task-card .difficulty { margin-top: 6px; }
+    .event-task-link { margin-top: 8px; color: #174ea6; }
+    /* Даты без дополнительной рамки: юридический срок отдельно сохраняется. */
+    .date-group {
+      margin: 11px 0 12px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+    }
+    .date-pair {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: 9px;
+      row-gap: 5px;
+    }
+    .date-pair .field { min-width: 0; margin-bottom: 7px; }
+    .date-pair label { font-size: 11px; }
+    .date-pair input[type="date"] { min-width: 0; width: 100%; padding: 8px 3px; font-size: 12px; }
+    .date-group .field { margin-bottom: 7px; }
+    .date-group .hint { margin: 5px 0 0; font-size: 10px; line-height: 1.35; }
+    .date-group .legal-save-button { margin-top: 3px; }
+    @media (max-width: 290px) {
+      .date-pair { grid-template-columns: 1fr; }
+    }
+
+    /* LEGAL-DEADLINE-0.5: компактные очереди и раскрываемый фокус. */
+    .focus-card {
+      margin-bottom: 10px;
+      border-color: #f0b53f;
+      background: linear-gradient(180deg, #fffdf6 0%, #fff7df 100%);
+      box-shadow: var(--shadow);
+    }
+    .focus-head {
+      align-items: center;
+      padding: 10px 11px;
+      background: var(--pattern-light), var(--grad-focus);
+      font-size: 12px;
+      font-weight: 700;
+      color: #7a4300;
+    }
+    .focus-title { font-size: 12px; }
+    .focus-head .signal-count { margin-left: auto; }
+    .focus-open-caption {
+      margin: 0;
+      padding: 8px 11px 5px;
+      border-top: 1px solid #f0f1f2;
+      font-size: 10px;
+    }
+    .focus-card[open] > .focus-head { border-bottom: none; }
+
+    /* Выбор дела — это сам выпадающий список в закреплённой плашке. */
+    .sticky-case-nav {
+      top: 0;
+      z-index: 30;
+      margin: 4px 0 14px;
+      overflow: visible;
+    }
+    .sticky-case-bar { padding: 7px 9px; }
+    .sticky-case-prefix { margin: 0; font-size: 11px; }
+    select.sticky-case-select {
+      display: block;
+      flex: 1;
+      min-width: 0;
+      width: 100%;
+      padding: 8px 9px;
+      font-size: 12px;
+      font-weight: 600;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      white-space: nowrap;
+      background: linear-gradient(180deg, #ffffff 0%, #f6f9ff 100%);
+      border: 1px solid #89b4ff;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+    }
+    .panel { scroll-margin-top: 98px; }
+
+    /* Два разных спокойных фона без рамки внутри рамки. */
+    .event-meeting-card,
+    .event-task-card {
+      padding: 12px 11px;
+      border: 1px solid;
+      border-radius: 11px;
+    }
+    .event-meeting-card {
+      background: var(--pattern-light), var(--grad-event);
+      border-color: #8eb4ff;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
+    }
+    .event-task-card {
+      margin: 12px 0;
+      background: var(--pattern-light), var(--grad-task);
+      border-color: #71d899;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.75);
+    }
+    .form-subheading,
+    .event-task-card > .follow-up-title {
+      margin: 0 0 10px;
+      color: #274765;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .event-task-card > .follow-up-title { color: #316444; }
+    .event-task-card > .follow-up-hint:empty { display: none; }
+    .event-meeting-card .follow-up-card {
+      margin: 10px 0 0;
+      padding: 11px 0 0;
+      border: 0;
+      border-top: 1px solid #d9e4f4;
+      border-radius: 0;
+      background: transparent;
+    }
+    .event-meeting-card .follow-up-card .follow-up-hint { margin-bottom: 8px; }
+    .event-task-card .date-group { margin: 10px 0; }
+    .event-task-card .field { margin-bottom: 9px; }
+
+    /* Вся игровая статистика — после рабочих форм. */
+    .bottom-rewards { margin: 20px 0 3px; }
+    .rewards-heading {
+      margin: 0 0 10px;
+      padding-top: 12px;
+      border-top: 1px solid #bed1ff;
+      color: var(--navy);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .bottom-rewards .level-card { margin-bottom: 12px; }
+    .bottom-rewards .summary { margin-bottom: 12px; }
+    @media (max-width: 380px) {
+      .event-meeting-card, .event-task-card { padding: 10px 9px; }
+    }
+
+    .week-card summary {
+      background: linear-gradient(135deg, rgba(255,255,255,.55) 0%, rgba(255,255,255,.15) 100%);
+    }
+
+    .weekly-review summary {
+      background: var(--pattern-light), linear-gradient(135deg, #dbeafe 0%, #c7d2fe 100%);
+      color: #1e3a8a;
+    }
+
+    .achievements-card summary {
+      background: var(--pattern-light), linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      color: #8a5a00;
+    }
+
+    .milestone-head {
+      padding-bottom: 2px;
+    }
+
+    /* FOCUS-PRIORITY-1.3: персональный дневной фокус и три независимые даты. */
+    .focus-group-title { margin: 9px 10px 7px; padding: 8px 10px;
+      background: #e8f0ff; color: #24467d; border-radius: 8px;
+      font-size: 12px; font-weight: 800; }
+    .focus-more-button { display: block; width: calc(100% - 20px);
+      margin: 8px 10px; padding: 11px; background: #e8edff;
+      color: #214b90; border: 1px solid #b5c9ef; border-radius: 8px;
+      cursor: pointer; font-weight: 700; text-align: center; }
+    .focus-more-button.hidden { display: none; }
+    .date-signal { margin-top: 5px; padding: 5px 8px;
+      border-radius: 7px; background: #eaf1fc; color: #244c7b;
+      font-size: 11px; line-height: 1.4; overflow-wrap: anywhere; }
+    .date-signal.plan-overdue { background: #e9d5ff; color: #673399; }
+    .date-signal.legal-overdue { background: #fecaca; color: #991b1b; font-weight: 800; }
+    .date-signal.legal-soon { background: #fed7aa; color: #9a3412; font-weight: 700; }
+    .date-signal.legal-watch { background: #fef08a; color: #854d0e; }
+    .date-signal.due { background: #bbf7d0; color: #166534; font-weight: 700; }
+    .priority-choice-group { margin: 7px 9px; background: #fff;
+      border: 1px solid #d6e4f8; border-radius: 10px; overflow: hidden; }
+    .priority-choice-group > summary { padding: 12px 10px; font-size: 12px;
+      font-weight: 800; color: #1e40af; cursor: pointer;
+      background: #eff6ff; }
+    .priority-choice-card { padding: 11px; border-top: 1px solid #e5eaf3; }
+    .priority-choice-title { font-size: 11px; font-weight: 700;
+      line-height: 1.35; color: #293d60; }
+    .priority-choice-card .signal-reason { font-size: 10px; line-height: 1.45; }
+    .priority-choice-card .signal-actions { margin-top: 9px; padding: 0; }
+    .focus-choice-selected { display: inline-flex; align-items: center;
+      padding: 7px 9px; border-radius: 7px; background: #dcfce7;
+      color: #166534; font-size: 11px; font-weight: 700; }
+  </style>
+<link rel="manifest" href="./manifest.webmanifest">
+<style>.offline-panel{background:#edf6ff;border:1px solid #94b4d8;padding:14px;border-radius:12px;margin:12px 0}.offline-panel p{font-size:13px;line-height:1.5}.offline-panel button{margin:5px 6px 5px 0;padding:10px;font:inherit;border-radius:8px;border:1px solid #8caed3;background:white;cursor:pointer}.offline-panel details{margin-top:8px}.offline-panel summary{cursor:pointer}</style></head>
+<body>
+  <div id="loading" class="loading">Загружаю Штаб…</div>
+  <div id="toast" class="toast"></div>
+
+  <main class="app">
+    <header class="hero">
+      <h1>Штаб</h1>
+      <p>Дела и задачи</p>
+    </header>
+
+    <details class="focus-card">
+      <summary class="focus-head">
+        <span class="focus-title">☀ Фокус на сегодня</span>
+        <span id="focusCount" class="signal-count">0</span>
+      </summary>
+      <div id="focusCaption" class="focus-caption focus-open-caption"></div>
+      <span id="focusScore" class="hidden" aria-hidden="true">0 действий · 0 XP</span>
+      <div id="focusList" class="focus-list"></div>
+      <button id="focusMore" type="button" class="focus-more focus-more-button hidden"></button>
+      <div id="focusReschedule" class="focus-reschedule hidden">
+        <div id="focusRescheduleTitle" class="focus-reschedule-title">Перенести задачу</div>
+        <div class="focus-reschedule-row">
+          <input id="focusRescheduleDate" type="date" aria-label="Новый срок">
+          <button id="focusRescheduleSave" class="quick-action" type="button">Сохранить</button>
+          <button id="focusRescheduleCancel" class="quick-action muted" type="button">Отмена</button>
+        </div>
+      </div>
+      <div id="focusFooter" class="focus-footer hidden">
+        <span id="focusHiddenCount"></span>
+        <button id="focusRestore" class="link-button" type="button">Вернуть</button>
+      </div>
+    </details>
+
+    <details id="attentionCard" class="signal-card attention-card">
+      <summary>
+        <span>● Требует внимания</span>
+        <span id="attentionCount" class="signal-count">0</span>
+      </summary>
+      <div id="attentionList" class="signal-list"></div>
+    </details>
+
+    <details id="waitingCard" class="signal-card waiting-card">
+      <summary>
+        <span>◷ В ожидании</span>
+        <span id="waitingCount" class="signal-count">0</span>
+      </summary>
+      <div id="waitingList" class="signal-list"></div>
+    </details>
+
+    <details id="workModes" class="mode-card">
+      <summary>
+        <span>Режим работы</span>
+        <span id="modeSummaryCount" class="mode-summary-count">0 задач</span>
+      </summary>
+      <div class="mode-filters">
+        <button class="mode-filter active" type="button" data-task-mode="1">📞 Контроль · <span id="modeCount1">0</span></button>
+        <button class="mode-filter" type="button" data-task-mode="2">✉️ Получить/сдать · <span id="modeCount2">0</span></button>
+        <button class="mode-filter" type="button" data-task-mode="3">📄 Документы · <span id="modeCount3">0</span></button>
+        <button class="mode-filter" type="button" data-task-mode="0">📌 Без типа · <span id="modeCount0">0</span></button>
+      </div>
+      <div id="modeTaskList" class="mode-list"></div>
+    </details>
+
+    <section class="workspace-panel" aria-labelledby="workspaceHeading">
+      <h2 id="workspaceHeading" class="workspace-heading">Работа с делом</h2>
+
+    <div class="field">
+      <label for="caseSearch">Найти дело</label>
+      <input id="caseSearch" type="search" placeholder="Клиент, спор или задача">
+    </div>
+
+    <label class="check">
+      <input id="showCompleted" type="checkbox">
+      <span>Показывать завершённые дела</span>
+    </label>
+
+    <div class="sticky-case-nav" aria-label="Выбор дела и разделы">
+      <div class="sticky-case-bar">
+        <label class="sticky-case-prefix" for="caseSelect">Дело</label>
+        <select id="caseSelect" class="sticky-case-select" aria-label="Выбрать дело">
+          <option value="">Выберите дело…</option>
+        </select>
+      </div>
+      <nav class="tabs" aria-label="Разделы Штаба">
+        <button class="tab active" data-panel="stagePanel">✓ Этап</button>
+        <button class="tab" data-panel="eventPanel">⚖ С/з + задача</button>
+        <button class="tab" data-panel="casePanel">Дело</button>
+        <button class="tab" data-panel="absencePanel">Отсутствия</button>
+      </nav>
+    </div>
+
+    <section id="caseCard" class="case-card">
+      <div id="caseClient" class="case-title"></div>
+      <div class="case-line"><strong>Задача:</strong> <span id="caseTask"></span></div>
+      <div class="case-line"><strong>Тип:</strong> <span id="caseTaskType"></span></div>
+      <div class="case-line"><strong>План:</strong> <span id="caseDeadline"></span></div>
+      <div class="case-line"><strong>Юридический срок:</strong> <span id="caseLegalDeadline"></span></div>
+      <div class="case-line"><strong>Ближайшее с/з / встреча:</strong> <span id="caseNextEvent"></span></div>
+      <details class="case-extra-details" id="caseExtraDetails">
+        <summary>Подробнее о деле</summary>
+        <div class="case-line"><strong>Спор:</strong> <span id="caseDispute"></span></div>
+        <div class="case-line"><strong>Предмет:</strong> <span id="caseSubject"></span></div>
+        <div class="case-line" id="caseLegalBasisLine"><strong>Основание срока:</strong> <span id="caseLegalBasis"></span></div>
+      </details>
+    </section>
+
+    <details id="actsCard" class="acts-card" open>
+      <summary>Акты по делу</summary>
+      <div class="acts-card-body">
+        <div id="actsLast" class="acts-last">Выберите дело выше, чтобы увидеть акты.</div>
+        <div id="actsRows"></div>
+        <div id="actsClose" class="acts-close hidden">
+          <div class="field">
+            <label id="actsDateLabel" for="actsDate">Дата сдачи</label>
+            <input id="actsDate" type="date">
+          </div>
+          <button id="actsSave" class="primary" type="button">Отметить сдачу акта</button>
+        </div>
+        <div id="actsHonorClose" class="hidden" style="margin-top:16px; border-top:1px solid #dce8fa; padding-top:11px">
+            <label for="actsHonorDate">Дата сдачи акта на гонорар (20%)</label>
+            <input id="actsHonorDate" type="date">
+            <button id="actsHonorSave" class="primary" type="button">Отметить сдачу акта на гонорар</button>
+            <p class="acts-note">Отдельно от актов 1–3.</p>
+        </div>
+      </div>
+    </details>
+
+    <section id="stagePanel" class="panel active">
+      <div class="field">
+        <label for="stageResult">Что сделано</label>
+        <textarea id="stageResult" placeholder="Результат выполненного этапа"></textarea>
+      </div>
+
+      <div class="field">
+        <label for="stageDate">Дата результата</label>
+        <input id="stageDate" type="date">
+        <p class="hint">Дата выполнения · история и XP. Не меняет сроки.</p>
+      </div>
+
+      <div class="field">
+        <span class="field-label">Сложность</span>
+        <div id="stageDifficulty" class="difficulty"></div>
+      </div>
+
+      <div class="field">
+        <label for="nextTask">Следующая узкая задача</label>
+        <textarea id="nextTask" class="compact" placeholder="Можно оставить пустой перед заседанием"></textarea>
+      </div>
+
+      <div class="field">
+        <label for="nextTaskType">Тип следующей задачи</label>
+        <select id="nextTaskType"></select>
+      </div>
+
+      <div class="date-group" aria-label="Плановая дата и юридический срок этапа">
+        <div class="date-pair">
+          <div class="field">
+            <label for="nextDeadline">Плановая дата</label>
+            <input id="nextDeadline" type="date">
+          </div>
+          <div class="field">
+            <label for="stageLegalDeadline">Юридический срок</label>
+            <input id="stageLegalDeadline" type="date">
+          </div>
+        </div>
+        <div class="field">
+          <label for="stageLegalBasis">Основание срока</label>
+          <textarea id="stageLegalBasis" class="compact" placeholder="Например, по определению суда"></textarea>
+        </div>
+      </div>
+
+      <label class="check">
+        <input id="completeMatterStage" type="checkbox">
+        <span>Дело полностью завершено</span>
+      </label>
+
+      <button id="saveStageButton" class="primary" onclick="saveStage()">Сохранить этап и сроки</button>
+    </section>
+
+    <section id="eventPanel" class="panel">
+      <div class="event-meeting-card" aria-label="Заседание или встреча">
+        <div class="form-subheading">Заседание / встреча</div>
+      <div class="field">
+        <label for="eventSelect">Запись</label>
+        <select id="eventSelect">
+          <option value="">Новое заседание / встреча</option>
+        </select>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="eventDate">Дата</label>
+          <input id="eventDate" type="date">
+        </div>
+        <div class="field">
+          <label for="eventTime">Время</label>
+          <input id="eventTime" type="time">
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="eventPlace">Место</label>
+        <input id="eventPlace" type="text" placeholder="Суд, адрес или онлайн">
+      </div>
+
+      <div class="field">
+        <label for="eventResult">Результат / примечание</label>
+        <textarea id="eventResult" class="compact" placeholder="Можно заполнить после события"></textarea>
+      </div>
+
+      <label class="check">
+        <input id="eventCountXp" type="checkbox">
+        <span>Событие состоялось — записать результат</span>
+      </label>
+
+      <div id="eventReward" class="fixed-reward hidden">
+        За заседание или встречу: 50 XP
+      </div>
+
+      <div id="nextEventBlock" class="follow-up-card hidden">
+        <div class="follow-up-title">Следующее заседание</div>
+        <div class="follow-up-hint">
+          Если дата известна, укажите её.
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label for="nextEventDate">Дата</label>
+            <input id="nextEventDate" type="date">
+          </div>
+          <div class="field">
+            <label for="nextEventTime">Время</label>
+            <input id="nextEventTime" type="time">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="nextEventPlace">Место</label>
+          <input id="nextEventPlace" type="text" placeholder="Суд, адрес или онлайн">
+        </div>
+      </div>
+
+      </div>
+
+      <div class="event-task-card" id="eventTaskCard">
+        <div class="follow-up-title">Задача и сроки</div>
+        <div class="follow-up-hint">
+          
+        </div>
+        <div class="event-task-current" id="eventTaskCurrent">Выберите дело.</div>
+
+        <label class="check">
+          <input id="eventTaskUpdate" type="checkbox">
+          <span>Обновить задачу / план</span>
+        </label>
+        <div id="eventTaskControls" class="hidden">
+          <label class="check">
+            <input id="eventTaskDone" type="checkbox">
+            <span>Задача выполнена — записать результат (+XP)</span>
+          </label>
+          <div id="eventTaskDoneFields" class="hidden">
+            <div class="field">
+              <label for="eventTaskResult">Что сделано по задаче</label>
+              <textarea id="eventTaskResult" class="compact" placeholder="Например: подготовил и направил пояснения"></textarea>
+            </div>
+            <div class="field">
+              <span class="field-label">Сложность выполненной задачи (XP)</span>
+              <div id="eventTaskDifficulty" class="difficulty"></div>
+            </div>
+          </div>
+          <div class="field">
+            <label for="eventTaskNew">Следующая / текущая узкая задача</label>
+            <textarea id="eventTaskNew" class="compact" placeholder="Можно оставить пустой"></textarea>
+          </div>
+          <div class="field">
+            <label for="eventTaskType">Тип задачи</label>
+            <select id="eventTaskType"></select>
+          </div>
+          <label class="check event-task-link">
+            <input id="eventTaskFollowDate" type="checkbox" checked>
+            <span>Привязать план к следующему заседанию</span>
+          </label>
+        </div>
+        <div class="date-group" aria-label="Плановая дата и юридический срок заседания">
+          <div class="date-pair">
+            <div class="field">
+              <label for="eventTaskDeadline">Плановая дата</label>
+              <input id="eventTaskDeadline" type="date">
+            </div>
+            <div class="field">
+              <label for="eventLegalDeadline">Юридический срок</label>
+              <input id="eventLegalDeadline" type="date">
+            </div>
+          </div>
+          <div class="field">
+            <label for="eventLegalBasis">Основание срока</label>
+            <textarea id="eventLegalBasis" class="compact" placeholder="Необязательно"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="saveEventButton" class="primary" onclick="saveEvent()">Сохранить изменения</button>
+        <button id="deleteEventButton" class="danger hidden" onclick="deleteEvent()">Удалить</button>
+      </div>
+    </section>
+
+    <section id="casePanel" class="panel">
+      <div class="field">
+        <label for="editClient">Клиент</label>
+        <input id="editClient" type="text">
+      </div>
+
+      <div class="field">
+        <label for="editDispute">Спор</label>
+        <textarea id="editDispute" class="compact"></textarea>
+      </div>
+
+      <div class="field">
+        <label for="editSubject">Предмет договора</label>
+        <textarea id="editSubject"></textarea>
+      </div>
+
+      <div class="field">
+        <label for="editTask">Текущая узкая задача</label>
+        <textarea id="editTask" class="compact"></textarea>
+      </div>
+
+      <div class="field">
+        <label for="editTaskType">Тип текущей задачи</label>
+        <select id="editTaskType"></select>
+      </div>
+
+      <div class="date-group" aria-label="Плановая дата и юридический срок дела">
+        <div class="date-pair">
+          <div class="field">
+            <label for="editDeadline">Плановая дата</label>
+            <input id="editDeadline" type="date">
+          </div>
+          <div class="field">
+            <label for="editLegalDeadline">Юридический срок</label>
+            <input id="editLegalDeadline" type="date">
+          </div>
+        </div>
+        <div class="field">
+          <label for="editLegalBasis">Основание срока</label>
+          <textarea id="editLegalBasis" class="compact" placeholder="Например, срок подачи ходатайства"></textarea>
+        </div>
+      </div>
+
+      <div class="section-title">Номера и ссылки на дела</div>
+      <div id="caseNumbers"></div>
+
+      <label class="check">
+        <input id="completeMatterEdit" type="checkbox">
+        <span>Дело полностью завершено</span>
+      </label>
+
+      <button id="saveCaseButton" class="primary" onclick="saveCase()">Сохранить изменения</button>
+
+    </section>
+
+    <section id="absencePanel" class="panel">
+      <div class="notice">
+        Выберите дни отсутствия — выходные уже учтены.
+      </div>
+
+      <div class="field">
+        <label for="absenceSelect">Период</label>
+        <select id="absenceSelect">
+          <option value="">Новое отсутствие</option>
+        </select>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="absenceStart">Начало</label>
+          <input id="absenceStart" type="date">
+        </div>
+        <div class="field">
+          <label for="absenceEnd">Окончание</label>
+          <input id="absenceEnd" type="date">
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="absenceType">Тип отсутствия</label>
+        <select id="absenceType"></select>
+      </div>
+
+      <div class="field">
+        <label for="absenceComment">Комментарий</label>
+        <textarea id="absenceComment" class="compact" placeholder="Необязательно"></textarea>
+      </div>
+
+      <div class="actions">
+        <button id="saveAbsenceButton" class="primary" onclick="saveAbsence()">Сохранить</button>
+        <button id="deleteAbsenceButton" class="danger hidden" onclick="deleteAbsence()">Удалить</button>
+      </div>
+
+      <div class="section-title">Запланированные периоды</div>
+      <div id="absenceList" class="absence-list"></div>
+    </section>
+    </section>
+
+    <!-- Достижения и веха в конце рабочего экрана. -->
+    <div class="bottom-rewards">
+      <h2 class="rewards-heading">Прогресс и достижения</h2>
+    <section class="level-card" aria-label="Прогресс уровня">
+      <div class="level-head">
+        <div id="levelTitle" class="level-title">Уровень 1</div>
+        <div id="levelTotal" class="level-total">0 XP всего</div>
+      </div>
+      <div class="progress-track">
+        <div id="levelProgress" class="progress-bar"></div>
+      </div>
+      <div class="level-foot">
+        <span id="levelCurrent">0 из 500 XP</span>
+        <span id="levelRemaining">До следующего: 500 XP</span>
+      </div>
+    </section>
+
+    <section class="summary">
+      <div class="metric">
+        <div id="todayXp" class="metric-value">0</div>
+        <div class="metric-label">XP сегодня</div>
+      </div>
+      <div class="metric">
+        <div id="todayActions" class="metric-value">0</div>
+        <div class="metric-label">Действий</div>
+      </div>
+      <div class="metric">
+        <div id="streak" class="metric-value">0</div>
+        <div class="metric-label">Дней серии</div>
+      </div>
+    </section>
+
+    <details class="week-card">
+      <summary>
+        <span class="week-heading">
+          Текущая неделя
+          <span id="weekCaption" class="week-caption">Последние действия</span>
+        </span>
+        <span id="weekXp" class="week-xp">0 XP</span>
+      </summary>
+      <div id="recentActions" class="recent-list"></div>
+    </details>
+
+    <details class="weekly-review">
+      <summary>
+        <span class="weekly-review-heading">
+          Итоги недели
+          <span id="weeklyReviewPeriod" class="weekly-review-period"></span>
+        </span>
+        <span id="weeklyReviewXp" class="weekly-review-xp">0 XP</span>
+      </summary>
+      <div class="weekly-review-body">
+        <div id="weeklyComparison" class="weekly-comparison"></div>
+        <div class="weekly-metrics">
+          <div class="weekly-metric"><strong id="weeklyStages">0</strong><span>этапов</span></div>
+          <div class="weekly-metric"><strong id="weeklyMeetings">0</strong><span>с/з и встреч</span></div>
+          <div class="weekly-metric"><strong id="weeklyClosed">0</strong><span>дел завершено</span></div>
+          <div class="weekly-metric"><strong id="weeklyActiveDays">0</strong><span>активных дней</span></div>
+        </div>
+        <div class="weekly-goal-head">
+          <span>Недельная цель</span>
+          <span id="weeklyGoalText">0 из 150 XP</span>
+        </div>
+        <div class="weekly-goal-track">
+          <div id="weeklyGoalBar" class="weekly-goal-bar"></div>
+        </div>
+        <div id="weeklyChart" class="weekly-chart"></div>
+        <div id="weeklyBest" class="weekly-best"></div>
+      </div>
+    </details>
+
+    <section id="milestoneCard" class="milestone-card">
+      <div class="milestone-head">
+        <span>Ближайшая веха</span>
+        <span id="milestoneCount" class="milestone-count">0 из 5 открыто</span>
+      </div>
+      <div id="milestoneTitle" class="milestone-title">Загружаю…</div>
+      <div id="milestoneDescription" class="milestone-description"></div>
+      <div id="milestoneProgressWrap" class="milestone-track">
+        <div id="milestoneProgress" class="milestone-bar"></div>
+      </div>
+      <div id="milestoneFoot" class="milestone-foot">
+        <span id="milestoneCurrent"></span>
+        <span id="milestoneRemaining"></span>
+      </div>
+    </section>
+
+    <details class="achievements-card">
+      <summary>
+        <span>🏆 Достижения</span>
+        <span id="achievementCount" class="achievement-count">0 из 5</span>
+      </summary>
+      <div id="achievementGrid" class="achievement-grid"></div>
+    </details>
+    </div>
+  </main>
+
+  <script src="./offline-store.js"></script><script src="./offline-model.js"></script><script src="./transport.js"></script><script src="./offline-client.js"></script><script>
+    var state = {
+      data: null,
+      selectedCaseId: '',
+      selectedAbsenceId: '',
+      taskMode: '1',
+      stageRequestId: null,
+      focusRescheduleCaseId: '',
+      focusShowAll: false,
+      actProgress: null
+    };
+
+    document.addEventListener('DOMContentLoaded', function () {
+      bindUi();
+      createCaseNumberFields();
+      loadData();
+    });
+
+    function bindUi() {
+      document.querySelectorAll('.tab').forEach(function (button) {
+        button.addEventListener('click', function () {
+          activatePanel(button.dataset.panel);
+        });
+      });
+
+      document.getElementById('caseSearch').addEventListener('input', renderCaseOptions);
+      document.getElementById('showCompleted').addEventListener('change', renderCaseOptions);
+      document.getElementById('caseSelect').addEventListener('change', function () {
+        state.selectedCaseId = this.value;
+        renderSelectedCase();
+      });
+      document.getElementById('actsSave').addEventListener('click', saveActClosure);
+      document.getElementById('actsHonorSave').addEventListener('click', saveHonorActClosure);
+      ['stage', 'event', 'edit'].forEach(function (panel) {
+        ['LegalDeadline', 'LegalBasis'].forEach(function (suffix) {
+          document.getElementById(panel + suffix).addEventListener('input', function () {
+            syncLegalDeadlineEditors(panel);
+          });
+        });
+      });
+      document.getElementById('eventSelect').addEventListener('change', renderSelectedEvent);
+      document.getElementById('eventTaskUpdate').addEventListener('change', toggleEventTaskControls);
+      document.getElementById('eventTaskDone').addEventListener('change', toggleEventTaskDone);
+      document.getElementById('eventTaskFollowDate').addEventListener('change', syncEventTaskDeadline);
+      document.getElementById('nextEventDate').addEventListener('change', syncEventTaskDeadline);
+      document.getElementById('nextEventDate').addEventListener('input', syncEventTaskDeadline);
+      document.getElementById('eventTaskDeadline').addEventListener('change', function () {
+        // Плановая дата находится рядом с юридической и доступна даже без открытия блока задачи.
+        // При ручном изменении H активируем существующий updateTask, чтобы «Сохранить вместе» записало дату.
+        var item = selectedCase();
+        if (item && this.value !== (item.deadline || '')) {
+          document.getElementById('eventTaskUpdate').checked = true;
+        }
+        // Ручная дата имеет приоритет перед автопереносом к следующему заседанию.
+        if (document.getElementById('nextEventDate').value &&
+            this.value !== document.getElementById('nextEventDate').value) {
+          document.getElementById('eventTaskFollowDate').checked = false;
+        }
+        toggleEventTaskControls();
+      });
+      document.getElementById('absenceSelect').addEventListener('change', function () {
+        state.selectedAbsenceId = this.value;
+        renderSelectedAbsence();
+      });
+      document.getElementById('absenceStart').addEventListener('change', function () {
+        var end = document.getElementById('absenceEnd');
+        if (!end.value) end.value = this.value;
+      });
+      document.getElementById('eventCountXp').addEventListener('change', function () {
+        document.getElementById('eventReward').classList.toggle('hidden', !this.checked);
+      });
+      document.getElementById('focusRescheduleSave')
+        .addEventListener('click', saveFocusReschedule);
+      document.getElementById('focusRescheduleCancel')
+        .addEventListener('click', closeFocusReschedule);
+      document.getElementById('focusRestore')
+        .addEventListener('click', restoreTodayFocus);
+      document.getElementById('focusMore')
+        .addEventListener('click', function () {
+          state.focusShowAll = !state.focusShowAll;
+          renderDailyFocus();
+        });
+      document.querySelectorAll('[data-task-mode]').forEach(function (button) {
+        button.addEventListener('click', function () {
+          state.taskMode = this.dataset.taskMode;
+          renderWorkModes();
+          renderDailyFocus();
+        });
+      });
+    }
+
+    function loadData(preferredCaseId, preferredAbsenceId) {
+      setLoading(true, 'Загружаю Штаб…');
+      google.script.run
+        .withSuccessHandler(function (data) {
+          state.data = data;
+          state.selectedCaseId = preferredCaseId || state.selectedCaseId || '';
+          if (preferredAbsenceId !== undefined) {
+            state.selectedAbsenceId = preferredAbsenceId || '';
+          }
+          renderSummary(data.summary);
+          renderRecentActions(data.recentActions || [], data.summary);
+          renderMilestone(data.milestone || {});
+          renderAchievements(data.achievements || []);
+          renderOperationalQueues(
+            data.attention || [],
+            data.waiting || []
+          );
+          renderDailyFocus();
+          renderWeeklyReview(data.weeklyReview || {});
+          renderDifficulty('stageDifficulty', data.xpLevels, 1);
+          renderDifficulty('eventTaskDifficulty', data.xpLevels, 1);
+          renderTaskTypes(data.taskTypes || []);
+          renderAbsenceTypes(data.absenceTypes || []);
+          document.getElementById('stageDate').value = data.today;
+          if (!document.getElementById('eventDate').value) {
+            document.getElementById('eventDate').value = data.today;
+          }
+          renderCaseOptions();
+          renderWorkModes();
+          renderAbsenceOptions();
+          renderAbsenceList();
+          setLoading(false);
+          showNewAchievements(data.newAchievements || []);
+        })
+        .withFailureHandler(handleFailure)
+        .getHeadquartersData();
+    }
+
+    function renderSummary(summary) {
+      var level = summary.level || 1;
+      var xpPerLevel = summary.xpPerLevel || 500;
+      var intoLevel = summary.xpIntoLevel || 0;
+      var toNext = summary.xpToNextLevel || xpPerLevel;
+      var percent = Math.max(0, Math.min(100, summary.levelProgressPercent || 0));
+
+      document.getElementById('levelTitle').textContent = 'Уровень ' + level;
+      document.getElementById('levelTotal').textContent = (summary.totalXp || 0) + ' XP всего';
+      document.getElementById('levelCurrent').textContent = intoLevel + ' из ' + xpPerLevel + ' XP';
+      document.getElementById('levelRemaining').textContent = 'До следующего: ' + toNext + ' XP';
+      document.getElementById('levelProgress').style.width = percent + '%';
+      document.getElementById('todayXp').textContent = summary.todayXp || 0;
+      document.getElementById('todayActions').textContent = summary.todayActions || 0;
+      document.getElementById('streak').textContent = summary.streak || 0;
+    }
+
+    function renderRecentActions(items, summary) {
+      var container = document.getElementById('recentActions');
+      var weekActions = summary.weekActions || 0;
+
+      document.getElementById('weekXp').textContent = (summary.weekXp || 0) + ' XP';
+      document.getElementById('weekCaption').textContent = weekActions
+        ? weekActions + ' ' + actionWord(weekActions) + ' за неделю · открыть последние'
+        : 'На этой неделе действий пока нет';
+
+      container.innerHTML = '';
+
+      if (!items.length) {
+        var empty = document.createElement('div');
+        empty.className = 'recent-item recent-result';
+        empty.textContent = 'Выполненные действия появятся здесь после начисления XP.';
+        container.appendChild(empty);
+        return;
+      }
+
+      items.forEach(function (item) {
+        var block = document.createElement('div');
+        block.className = 'recent-item';
+
+        var head = document.createElement('div');
+        head.className = 'recent-head';
+
+        var meta = document.createElement('span');
+        meta.textContent = [item.dateDisplay, item.type].filter(Boolean).join(' · ');
+
+        var xp = document.createElement('span');
+        xp.className = 'recent-xp';
+        xp.textContent = '+' + item.xp + ' XP';
+
+        var result = document.createElement('div');
+        result.className = 'recent-result';
+        result.textContent = item.result || 'Результат не указан';
+
+        head.appendChild(meta);
+        head.appendChild(xp);
+        block.appendChild(head);
+        block.appendChild(result);
+
+        if (item.client) {
+          var client = document.createElement('div');
+          client.className = 'recent-client';
+          client.textContent = item.client;
+          block.appendChild(client);
+        }
+
+        container.appendChild(block);
+      });
+    }
+
+    function actionWord(count) {
+      var lastTwo = Math.abs(count) % 100;
+      var last = lastTwo % 10;
+      if (lastTwo >= 11 && lastTwo <= 14) return 'действий';
+      if (last === 1) return 'действие';
+      if (last >= 2 && last <= 4) return 'действия';
+      return 'действий';
+    }
+
+    function renderMilestone(item) {
+      var completed = item.completedCount || 0;
+      var total = item.totalCount || 5;
+      document.getElementById('milestoneCount').textContent =
+        completed + ' из ' + total + ' открыто';
+
+      if (item.allCompleted) {
+        document.getElementById('milestoneTitle').textContent = 'Все вехи открыты';
+        document.getElementById('milestoneDescription').textContent =
+          'Базовый набор достижений полностью выполнен.';
+        document.getElementById('milestoneProgressWrap').classList.add('hidden');
+        document.getElementById('milestoneFoot').classList.add('hidden');
+        return;
+      }
+
+      var unit = item.unit || '';
+      document.getElementById('milestoneTitle').textContent = item.title || 'Следующая веха';
+      document.getElementById('milestoneDescription').textContent = item.description || '';
+      document.getElementById('milestoneCurrent').textContent =
+        (item.current || 0) + ' из ' + (item.target || 0) + (unit ? ' ' + unit : '');
+      document.getElementById('milestoneRemaining').textContent =
+        'Осталось: ' + (item.remaining || 0) + (unit ? ' ' + unit : '');
+      document.getElementById('milestoneProgress').style.width =
+        Math.max(0, Math.min(100, item.progressPercent || 0)) + '%';
+      document.getElementById('milestoneProgressWrap').classList.remove('hidden');
+      document.getElementById('milestoneFoot').classList.remove('hidden');
+    }
+
+    function renderAchievements(items) {
+      var unlockedCount = items.filter(function (item) {
+        return item.unlocked;
+      }).length;
+      document.getElementById('achievementCount').textContent =
+        unlockedCount + ' из ' + items.length;
+
+      var container = document.getElementById('achievementGrid');
+      container.innerHTML = '';
+
+      items.forEach(function (item) {
+        var block = document.createElement('div');
+        block.className = 'achievement-item' +
+          (item.unlocked ? ' unlocked' : '');
+        block.title = item.description || '';
+
+        var icon = document.createElement('div');
+        icon.className = 'achievement-icon';
+        icon.textContent = item.unlocked ? item.icon : '🔒';
+
+        var title = document.createElement('div');
+        title.className = 'achievement-title';
+        title.textContent = item.title;
+
+        var description = document.createElement('div');
+        description.className = 'achievement-description';
+        description.textContent = item.description;
+
+        var track = document.createElement('div');
+        track.className = 'achievement-track';
+        var bar = document.createElement('div');
+        bar.className = 'achievement-bar';
+        bar.style.width = Math.max(
+          0,
+          Math.min(100, item.progressPercent || 0)
+        ) + '%';
+        track.appendChild(bar);
+
+        var foot = document.createElement('div');
+        foot.className = 'achievement-foot';
+
+        var progress = document.createElement('span');
+        progress.textContent = Math.min(item.current || 0, item.target || 0) +
+          ' / ' + (item.target || 0) + (item.unit ? ' ' + item.unit : '');
+
+        var status = document.createElement('span');
+        status.className = 'achievement-status';
+        status.textContent = item.unlocked
+          ? item.unlockedDateDisplay
+            ? 'Открыто ' + item.unlockedDateDisplay
+            : 'Открыто'
+          : 'Ещё ' + Math.max(0, (item.target || 0) - (item.current || 0));
+
+        foot.appendChild(progress);
+        foot.appendChild(status);
+        block.appendChild(icon);
+        block.appendChild(title);
+        block.appendChild(description);
+        block.appendChild(track);
+        block.appendChild(foot);
+        container.appendChild(block);
+      });
+    }
+
+    function showNewAchievements(items) {
+      if (!items.length) return;
+
+      var names = items.map(function (item) {
+        return item.icon + ' ' + item.title;
+      }).join(', ');
+      showToast(
+        items.length === 1
+          ? 'Новое достижение: ' + names
+          : 'Открыты достижения: ' + names,
+        'achievement'
+      );
+    }
+
+    function renderDailyFocus() {
+      if (!state.data) return;
+      var today = state.data.today;
+      var candidates = state.data.focusCandidates || [];
+      var pinned = new Set(state.data.focusPinnedCaseIds || []);
+      var hidden = new Set(state.data.focusHiddenKeys || []);
+      var mandatory = [];
+      var chosen = [];
+      var casesById = new Map((state.data.cases || []).map(function (item) {
+        return [item.id, item];
+      }));
+      candidates.forEach(function (item) {
+        var selected = item.autoToday || pinned.has(item.caseId);
+        if (!selected) return;
+        var isMandatory = Boolean(item.autoToday);
+        var hasTodayEvent = item.eventDays === 0;
+        var focusItem = {
+          key: 'TASK:' + item.caseId,
+          kind: item.task ? 'task' : hasTodayEvent ? 'event' : 'legal',
+          caseId: item.caseId,
+          eventId: hasTodayEvent ? item.eventId : '',
+          client: item.client,
+          // Единая иерархия: заголовок — клиент; описание — только задача.
+          // При отсутствии задачи показываем причину включения, а не имя повторно.
+          main: item.client || 'Дело без названия',
+          meta: item.task || (hasTodayEvent
+            ? 'Заседание / встреча сегодня'
+            : item.legalDays !== null && item.legalDays <= 0
+              ? 'Юридический срок · текущая задача не указана'
+              : item.planDays === 0
+                ? 'Плановый срок сегодня · текущая задача не указана'
+                : 'Текущая задача не указана'),
+          icon: hasTodayEvent ? '⚖' :
+            item.legalDays !== null && item.legalDays <= 0 ? '⏳' :
+            taskTypeIcon(item.taskTypeLevel),
+          deadline: item.deadline || '',
+          sortDate: item.sortDate || today,
+          overdue: item.legalDays !== null && item.legalDays < 0,
+          mandatory: isMandatory,
+          dates: item
+        };
+        (isMandatory ? mandatory : chosen).push(focusItem);
+      });
+      // События без CASE ID остаются в обязательном фокусе и не теряются.
+      (state.data.events || []).filter(function (event) {
+        return event.date === today && !event.result &&
+          (!event.caseId || !casesById.has(event.caseId));
+      }).forEach(function (event) {
+        // События на сегодня обязательны; старые скрытия не применяются.
+        mandatory.push({
+          key: 'EVENT:' + event.eventId, kind: 'event',
+          caseId: event.caseId || '', eventId: event.eventId,
+          client: event.client || 'Заседание / встреча',
+          main: event.client || 'Заседание / встреча',
+          meta: 'Заседание / встреча сегодня',
+          icon: '⚖', sortDate: today, overdue: false, mandatory: true,
+          dates: {eventDateDisplay: event.dateDisplay,
+            eventTimeDisplay: event.timeDisplay, eventPlace: event.place,
+            eventDays: 0, planDays: null, legalDays: null}
+        });
+      });
+      mandatory.sort(sortFocusTasks);
+      chosen.sort(sortFocusTasks);
+      var all = mandatory.concat(chosen);
+      var shown = state.focusShowAll ? all : all.slice(0, 7);
+      var more = document.getElementById('focusMore');
+      more.classList.toggle('hidden', all.length <= 7);
+      more.textContent = state.focusShowAll ? 'Свернуть список' :
+        'Показать все · ещё ' + Math.max(0, all.length - 7);
+      document.getElementById('focusCount').textContent = String(all.length);
+      document.getElementById('focusCaption').textContent =
+        'Обязательно сегодня: ' + mandatory.length +
+        ' · Мой выбор: ' + chosen.length;
+      var summary = state.data.summary || {};
+      document.getElementById('focusScore').textContent =
+        (summary.todayActions || 0) + ' ' + actionWord(summary.todayActions || 0) +
+        ' · +' + (summary.todayXp || 0) + ' XP';
+      var container = document.getElementById('focusList');
+      container.innerHTML = '';
+      if (!shown.length) {
+        var empty = document.createElement('div');
+        empty.className = 'focus-empty';
+        empty.textContent = 'Обязательных дел на сегодня нет. Выберите задачи из очереди ниже.';
+        container.appendChild(empty);
+      }
+      var prev = '';
+      shown.forEach(function (item) {
+        var bucket = item.mandatory ? 'Обязательно сегодня' : 'Мой выбор';
+        if (bucket !== prev) {
+          var head = document.createElement('div');
+          head.className = 'focus-group-title';
+          head.textContent = bucket;
+          container.appendChild(head);
+          prev = bucket;
+        }
+        container.appendChild(createFocusItem(item));
+      });
+      var footer = document.getElementById('focusFooter');
+      // Старый механизм «Не сегодня» не скрывает обязательные пункты
+      // в новой модели. Обработчики оставлены для совместимости.
+      footer.classList.toggle('hidden', true);
+      document.getElementById('focusHiddenCount').textContent = '';
+    }
+
+    function renderDateSignals(container, dates) {
+      if (!dates) return;
+      var lines = [];
+      if (dates.eventDateDisplay) {
+        lines.push({tone: dates.eventDays === 0 ? 'due' : 'event',
+          label: '⚖ С/З: ' + dates.eventDateDisplay +
+            (dates.eventTimeDisplay ? ' · ' + dates.eventTimeDisplay : '')});
+      }
+      if (dates.deadlineDisplay) {
+        lines.push({tone: dates.planDays < 0 ? 'plan-overdue' :
+          dates.planDays === 0 ? 'due' : 'plan',
+          label: 'ПЛАН: ' + dates.deadlineDisplay +
+            (dates.planDays < 0 ? ' · просрочен' :
+              dates.planDays === 0 ? ' · сегодня' : '')});
+      }
+      if (dates.legalDeadlineDisplay) {
+        lines.push({tone: dates.legalDays < 0 ? 'legal-overdue' :
+          dates.legalDays <= 3 ? 'legal-soon' :
+            dates.legalDays <= 14 ? 'legal-watch' : 'legal-future',
+          label: 'ЮР: ' + dates.legalDeadlineDisplay +
+            (dates.legalDays < 0 ? ' · просрочен' :
+              dates.legalDays === 0 ? ' · сегодня' :
+                dates.legalDays !== null ? ' · через ' + dates.legalDays + ' дн.' : '')});
+      }
+      lines.forEach(function (line) {
+        var node = document.createElement('div');
+        node.className = 'date-signal ' + line.tone;
+        node.textContent = line.label;
+        container.appendChild(node);
+      });
+    }
+
+    function setCaseFocus(caseId, selected) {
+      if (!caseId) return;
+      setLoading(true, selected ? 'Добавляю дело в фокус…' : 'Убираю дело из фокуса…');
+      google.script.run.withSuccessHandler(function (response) {
+        state.data.focusPinnedCaseIds = response.caseIds || [];
+        renderDailyFocus();
+        renderOperationalQueues(state.data.attention || [], state.data.waiting || []);
+        setLoading(false);
+        showToast(response.message || 'Фокус обновлён.', 'success');
+      }).withFailureHandler(handleFailure)
+        .setCaseFocusFromHQ({caseId: caseId, selected: selected});
+    }
+
+    // Никаких серверных начислений: эта дата используется лишь для подсказок.
+    function dateDaysBetween(fromIso, toIso) {
+      var from = Date.parse(fromIso + 'T00:00:00Z');
+      var to = Date.parse(toIso + 'T00:00:00Z');
+      return Math.round((to - from) / 86400000);
+    }
+
+    function legalFocusLabel(item, days) {
+      var deadline = item.legalDeadlineDisplay || item.legalDeadline;
+      if (days < 0) return 'Юр. срок просрочен · ' + deadline;
+      if (days === 0) return 'Юр. срок сегодня · ' + deadline;
+      return 'Юр. срок ' + deadline + ' · через ' + days + ' дн.';
+    }
+
+    function renderWeeklyReview(item) {
+      document.getElementById('weeklyReviewPeriod').textContent =
+        item.period || 'Текущая неделя';
+      document.getElementById('weeklyReviewXp').textContent =
+        (item.xp || 0) + ' XP';
+      document.getElementById('weeklyStages').textContent = item.stages || 0;
+      document.getElementById('weeklyMeetings').textContent = item.meetings || 0;
+      document.getElementById('weeklyClosed').textContent = item.closedCases || 0;
+      document.getElementById('weeklyActiveDays').textContent = item.activeDays || 0;
+
+      var comparison = document.getElementById('weeklyComparison');
+      comparison.className =
+        'weekly-comparison ' + (item.comparisonTone || 'neutral');
+      comparison.textContent = item.comparisonText || '';
+
+      document.getElementById('weeklyGoalText').textContent =
+        (item.xp || 0) + ' из ' + (item.goal || 150) + ' XP';
+      document.getElementById('weeklyGoalBar').style.width =
+        Math.max(0, Math.min(100, item.goalProgressPercent || 0)) + '%';
+
+      var chart = document.getElementById('weeklyChart');
+      chart.innerHTML = '';
+      var days = item.daily || [];
+      var maxXp = days.reduce(function (max, day) {
+        return Math.max(max, day.xp || 0);
+      }, 0) || 1;
+
+      days.forEach(function (day) {
+        var block = document.createElement('div');
+        block.className = 'weekly-day' +
+          (day.isToday ? ' today' : '') +
+          (day.isFuture ? ' future' : '');
+
+        var xp = document.createElement('div');
+        xp.className = 'weekly-day-xp';
+        xp.textContent = day.xp ? day.xp : '';
+
+        var barWrap = document.createElement('div');
+        barWrap.className = 'weekly-day-bar-wrap';
+        var bar = document.createElement('div');
+        bar.className = 'weekly-day-bar';
+        bar.style.height = day.xp
+          ? Math.max(8, Math.round(day.xp / maxXp * 42)) + 'px'
+          : '2px';
+        bar.title = (day.xp || 0) + ' XP · ' +
+          (day.actions || 0) + ' ' + actionWord(day.actions || 0);
+        barWrap.appendChild(bar);
+
+        var label = document.createElement('div');
+        label.textContent = day.label || '';
+
+        block.appendChild(xp);
+        block.appendChild(barWrap);
+        block.appendChild(label);
+        chart.appendChild(block);
+      });
+
+      document.getElementById('weeklyBest').textContent = item.bestDayXp
+        ? 'Лучший день: ' + item.bestDayLabel + ' · ' + item.bestDayXp + ' XP'
+        : 'Лучший день появится после первого действия недели';
+    }
+
+    function createFocusItem(item) {
+      var block = document.createElement('div');
+      block.className = 'focus-item ' + item.kind + (item.overdue ? ' overdue' : '');
+
+      var head = document.createElement('div');
+      head.className = 'focus-item-head';
+
+      var icon = document.createElement('span');
+      icon.className = 'focus-icon';
+      icon.textContent = item.icon;
+
+      var body = document.createElement('div');
+      body.className = 'focus-body';
+
+      var main = document.createElement('div');
+      main.className = 'focus-main';
+      main.textContent = item.main;
+
+      var meta = document.createElement('div');
+      meta.className = 'focus-meta';
+      meta.textContent = item.meta;
+
+      body.appendChild(main);
+      body.appendChild(meta);
+      renderDateSignals(body, item.dates);
+      head.appendChild(icon);
+      head.appendChild(body);
+      block.appendChild(head);
+
+      var actions = document.createElement('div');
+      actions.className = 'focus-actions';
+
+      actions.appendChild(focusActionButton(
+        item.kind === 'event' ? 'Открыть событие'
+          : item.kind === 'legal' ? 'Открыть дело' : 'Открыть этап',
+        false,
+        function () {
+          openCasePanel(
+            item.caseId,
+            item.kind === 'event' ? 'eventPanel'
+              : item.kind === 'legal' ? 'casePanel' : 'stagePanel',
+            item.eventId || ''
+          );
+        }
+      ));
+
+      if (item.kind === 'task') {
+        actions.appendChild(focusActionButton('Перенести', true, function () {
+          openFocusReschedule(item);
+        }));
+      }
+
+      if (!item.mandatory && item.caseId) {
+        actions.appendChild(focusActionButton('Убрать из фокуса', true, function () {
+          setCaseFocus(item.caseId, false);
+        }));
+      }
+      if (item.dates && item.dates.eventDays === 0 && item.kind === 'task' && item.eventId) {
+        actions.appendChild(focusActionButton('Открыть событие', true, function () {
+          openCasePanel(item.caseId, 'eventPanel', item.eventId);
+        }));
+      }
+
+      block.appendChild(actions);
+      return block;
+    }
+
+    function focusActionButton(label, muted, handler) {
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'quick-action' + (muted ? ' muted' : '');
+      button.textContent = label;
+      button.addEventListener('click', handler);
+      return button;
+    }
+
+    function sortFocusTasks(a, b) {
+      var byDate = a.sortDate.localeCompare(b.sortDate);
+      if (byDate) return byDate;
+      return String(a.client || '').localeCompare(String(b.client || ''), 'ru');
+    }
+
+    function taskTypeIcon(level) {
+      if (Number(level) === 1) return '📞';
+      if (Number(level) === 2) return '✉️';
+      if (Number(level) === 3) return '📄';
+      return '📌';
+    }
+
+    function focusModeLabel(level) {
+      if (Number(level) === 1) return 'Контроль и звонки';
+      if (Number(level) === 2) return 'Получить/сдать/отправить';
+      if (Number(level) === 3) return 'Документы и анализ';
+      return 'Без типа';
+    }
+
+    function openFocusReschedule(item) {
+      state.focusRescheduleCaseId = item.caseId;
+      document.getElementById('focusRescheduleTitle').textContent =
+        'Перенести: ' + item.client;
+      document.getElementById('focusRescheduleDate').value =
+        item.deadline || state.data.today;
+      document.getElementById('focusReschedule').classList.remove('hidden');
+      document.getElementById('focusRescheduleDate').focus();
+    }
+
+    function closeFocusReschedule() {
+      state.focusRescheduleCaseId = '';
+      document.getElementById('focusReschedule').classList.add('hidden');
+    }
+
+    function saveFocusReschedule() {
+      var deadline = document.getElementById('focusRescheduleDate').value;
+      if (!state.focusRescheduleCaseId || !deadline) {
+        showToast('Выберите новую дату.', 'error');
+        return;
+      }
+
+      var caseId = state.focusRescheduleCaseId;
+      setLoading(true, 'Переношу задачу…');
+      google.script.run
+        .withSuccessHandler(function (response) {
+          closeFocusReschedule();
+          showToast(response.message, 'success');
+          loadData(caseId);
+        })
+        .withFailureHandler(handleFailure)
+        .rescheduleTaskFromHQ({ caseId: caseId, deadline: deadline });
+    }
+
+    function hideFocusItem(itemKey) {
+      setLoading(true, 'Обновляю фокус…');
+      google.script.run
+        .withSuccessHandler(function (response) {
+          var hidden = state.data.focusHiddenKeys || [];
+          if (hidden.indexOf(itemKey) === -1) hidden.push(itemKey);
+          state.data.focusHiddenKeys = hidden;
+          closeFocusReschedule();
+          renderDailyFocus();
+          setLoading(false);
+          showToast(response.message, 'success');
+        })
+        .withFailureHandler(handleFailure)
+        .hideFocusItemFromHQ({ itemKey: itemKey });
+    }
+
+    function restoreTodayFocus() {
+      setLoading(true, 'Возвращаю пункты…');
+      google.script.run
+        .withSuccessHandler(function (response) {
+          state.data.focusHiddenKeys = [];
+          renderDailyFocus();
+          setLoading(false);
+          showToast(response.message, 'success');
+        })
+        .withFailureHandler(handleFailure)
+        .restoreTodayFocusFromHQ();
+    }
+
+    function renderOperationalQueues(attention, waiting) {
+      var candidates = (state.data && state.data.focusCandidates) || [];
+      document.getElementById('attentionCount').textContent =
+        String(candidates.length ? candidates.filter(function (item) {
+          return item.group !== 'scheduled';
+        }).length : attention.length);
+      document.getElementById('waitingCount').textContent = String(waiting.length);
+      if (state.data && state.data.focusCandidates) {
+        renderPriorityChoices(candidates);
+      } else {
+        renderSignalList('attentionList', attention,
+          'Сейчас нет дел, требующих внимания.');
+      }
+      renderSignalList('waitingList', waiting,
+        'Дел в ожидании заседания или встречи нет.');
+    }
+
+    function renderPriorityChoices(candidates) {
+      var root = document.getElementById('attentionList');
+      root.innerHTML = '';
+      var labels = [
+        ['legalCritical', 'Красный · юридические сроки сегодня / просрочены'],
+        ['legalSoon', 'Юридические сроки через 1–14 дней'],
+        ['planOverdue', 'Просроченные плановые задачи'],
+        ['hearingSoon', 'Ближайшие заседания и встречи'],
+        ['planSoon', 'Плановые задачи на ближайшие 3 дня'],
+        ['noNext', 'Без следующего шага'],
+        ['scheduled', 'Остальные запланированные дела']
+      ];
+      var pinned = new Set((state.data && state.data.focusPinnedCaseIds) || []);
+      labels.forEach(function (spec, index) {
+        var items = candidates.filter(function (item) { return item.group === spec[0]; });
+        if (!items.length) return;
+        var group = document.createElement('details');
+        group.className = 'priority-choice-group';
+        group.open = index < 3;
+        var summary = document.createElement('summary');
+        summary.textContent = spec[1] + ' · ' + items.length;
+        group.appendChild(summary);
+        items.forEach(function (item) {
+          var card = document.createElement('div');
+          card.className = 'priority-choice-card';
+          var title = document.createElement('div');
+          title.className = 'priority-choice-title';
+          title.textContent = item.priority + ' · ' + (item.client || 'Без названия');
+          card.appendChild(title);
+          var reason = document.createElement('div');
+          reason.className = 'signal-reason';
+          reason.textContent = item.reason +
+            (item.task ? ' · ' + item.task : '');
+          card.appendChild(reason);
+          renderDateSignals(card, item);
+          var actions = document.createElement('div');
+          actions.className = 'signal-actions';
+          if (item.autoToday || pinned.has(item.caseId)) {
+            var status = document.createElement('span');
+            status.className = 'focus-choice-selected';
+            status.textContent = 'В фокусе';
+            actions.appendChild(status);
+          } else {
+            actions.appendChild(focusActionButton('+ В фокус', false, function () {
+              setCaseFocus(item.caseId, true);
+            }));
+          }
+          actions.appendChild(focusActionButton(
+            item.task ? 'Открыть задачу' : 'Открыть дело',
+            true, function () {
+              openCasePanel(item.caseId, item.task ? 'stagePanel' : 'casePanel');
+            }
+          ));
+          if (item.eventId) {
+            actions.appendChild(focusActionButton('С/З', true, function () {
+              openCasePanel(item.caseId, 'eventPanel', item.eventId);
+            }));
+          }
+          card.appendChild(actions);
+          group.appendChild(card);
+        });
+        root.appendChild(group);
+      });
+      if (!root.children.length) {
+        var empty = document.createElement('div');
+        empty.className = 'signal-empty';
+        empty.textContent = 'Активных дел нет.';
+        root.appendChild(empty);
+      }
+    }
+
+    function renderSignalList(containerId, items, emptyText) {
+      var container = document.getElementById(containerId);
+      container.innerHTML = '';
+
+      if (!items.length) {
+        var empty = document.createElement('div');
+        empty.className = 'signal-empty';
+        empty.textContent = emptyText;
+        container.appendChild(empty);
+        return;
+      }
+
+      items.forEach(function (item) {
+        var block = document.createElement('div');
+        block.className =
+          'signal-item priority-' + String(item.priority || 'P3').toLowerCase();
+
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'signal-main';
+
+        var head = document.createElement('div');
+        head.className = 'signal-head';
+
+        var priority = document.createElement('span');
+        priority.className =
+          'priority-badge ' + String(item.priority || 'P3').toLowerCase();
+        priority.textContent = item.priority || 'P3';
+
+        var client = document.createElement('span');
+        client.className = 'signal-client';
+        client.textContent = item.client || 'Дело без названия';
+
+        head.appendChild(priority);
+        head.appendChild(client);
+        button.appendChild(head);
+
+        var reason = document.createElement('div');
+        reason.className = 'signal-reason';
+        reason.textContent = item.reason || '';
+        button.appendChild(reason);
+        // Юридический срок показываем даже когда более срочна обычная задача.
+        if (item.legalWarning && item.legalWarning !== item.reason) {
+          var legalNotice = document.createElement('div');
+          legalNotice.className = 'signal-legal';
+          legalNotice.textContent = item.legalWarning;
+          button.appendChild(legalNotice);
+        }
+
+        var detailText = item.task || '';
+        if (item.eventDateDisplay) {
+          detailText = [
+            '⚖️ ' + item.eventDateDisplay,
+            item.eventTimeDisplay,
+            item.eventPlace
+          ].filter(Boolean).join(' · ');
+        }
+        if (detailText) {
+          var detail = document.createElement('div');
+          detail.className = 'signal-task';
+          detail.textContent = detailText;
+          button.appendChild(detail);
+        }
+
+        if (item.dispute) {
+          var dispute = document.createElement('div');
+          dispute.className = 'signal-reason';
+          dispute.textContent = item.dispute;
+          button.appendChild(dispute);
+        }
+
+        button.addEventListener('click', function () {
+          openSignalItem(item);
+        });
+        block.appendChild(button);
+
+        var actions = document.createElement('div');
+        actions.className = 'signal-actions';
+
+        var openButton = document.createElement('button');
+        openButton.type = 'button';
+        openButton.className = 'quick-action';
+        openButton.textContent = item.eventDateDisplay
+          ? 'Открыть событие'
+          : item.openPanel === 'casePanel' ? 'Открыть дело' : 'Открыть этап';
+        openButton.addEventListener('click', function () {
+          openSignalItem(item);
+        });
+
+        var cardButton = document.createElement('button');
+        cardButton.type = 'button';
+        cardButton.className = 'quick-action muted';
+        cardButton.textContent = 'Карточка';
+        cardButton.addEventListener('click', function () {
+          openCasePanel(item.caseId, 'casePanel');
+        });
+
+        actions.appendChild(openButton);
+        actions.appendChild(cardButton);
+        block.appendChild(actions);
+        container.appendChild(block);
+      });
+    }
+
+    function openSignalItem(item) {
+      openCasePanel(
+        item.caseId,
+        item.eventDateDisplay ? 'eventPanel'
+          : item.openPanel === 'casePanel' ? 'casePanel' : 'stagePanel',
+        item.eventId || ''
+      );
+    }
+
+    function openCasePanel(caseId, panelId, eventId) {
+      document.getElementById('caseSearch').value = '';
+      state.selectedCaseId = caseId || '';
+      renderCaseOptions();
+      activatePanel(panelId || 'stagePanel');
+
+      if (panelId === 'eventPanel' && eventId) {
+        var eventSelect = document.getElementById('eventSelect');
+        if (Array.from(eventSelect.options).some(function (option) {
+          return option.value === eventId;
+        })) {
+          eventSelect.value = eventId;
+          renderSelectedEvent();
+        }
+      }
+
+      document.getElementById(panelId || 'stagePanel').scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+
+    function activatePanel(panelId) {
+      document.querySelectorAll('.tab').forEach(function (item) {
+        item.classList.toggle('active', item.dataset.panel === panelId);
+      });
+      document.querySelectorAll('.panel').forEach(function (item) {
+        item.classList.toggle('active', item.id === panelId);
+      });
+    }
+
+    function renderTaskTypes(types) {
+      ['nextTaskType', 'editTaskType', 'eventTaskType'].forEach(function (id) {
+        var select = document.getElementById(id);
+        var current = select.value;
+        select.innerHTML = '';
+        select.appendChild(new Option('Не распределено', ''));
+        types.forEach(function (item) {
+          select.appendChild(new Option(item.value, item.value));
+        });
+        if (Array.from(select.options).some(function (option) {
+          return option.value === current;
+        })) {
+          select.value = current;
+        }
+      });
+    }
+
+    function renderWorkModes() {
+      if (!state.data) return;
+
+      var items = state.data.cases.filter(function (item) {
+        return !item.completed && Boolean(item.task);
+      });
+      var counts = { '0': 0, '1': 0, '2': 0, '3': 0 };
+
+      items.forEach(function (item) {
+        var key = String(item.taskTypeLevel || 0);
+        counts[key] = (counts[key] || 0) + 1;
+      });
+
+      Object.keys(counts).forEach(function (key) {
+        document.getElementById('modeCount' + key).textContent = counts[key];
+      });
+      document.getElementById('modeSummaryCount').textContent =
+        items.length + ' ' + taskWord(items.length);
+
+      document.querySelectorAll('[data-task-mode]').forEach(function (button) {
+        button.classList.toggle(
+          'active',
+          button.dataset.taskMode === state.taskMode
+        );
+      });
+
+      var filtered = items.filter(function (item) {
+        return String(item.taskTypeLevel || 0) === state.taskMode;
+      });
+      var container = document.getElementById('modeTaskList');
+      container.innerHTML = '';
+
+      if (!filtered.length) {
+        var empty = document.createElement('div');
+        empty.className = 'recent-item recent-result';
+        empty.textContent = state.taskMode === '0'
+          ? 'Все текущие задачи уже распределены.'
+          : 'В этом режиме пока нет задач.';
+        container.appendChild(empty);
+        return;
+      }
+
+      filtered.forEach(function (item) {
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'mode-item';
+
+        var task = document.createElement('div');
+        task.className = 'mode-task';
+        task.textContent = item.task;
+
+        var meta = document.createElement('div');
+        meta.className = 'mode-meta';
+
+        var client = document.createElement('span');
+        client.textContent = item.client;
+
+        var deadline = document.createElement('span');
+        deadline.className = 'mode-deadline';
+        if (!item.deadline) {
+          deadline.textContent = 'Без срока';
+        } else if (item.deadline < state.data.today) {
+          deadline.textContent = 'Просрочено · ' + item.deadlineDisplay;
+          deadline.classList.add('overdue');
+        } else if (item.deadline === state.data.today) {
+          deadline.textContent = 'Сегодня';
+          deadline.classList.add('today');
+        } else {
+          deadline.textContent = item.deadlineDisplay;
+        }
+
+        meta.appendChild(client);
+        meta.appendChild(deadline);
+        button.appendChild(task);
+        button.appendChild(meta);
+        button.addEventListener('click', function () {
+          openCasePanel(item.id, 'stagePanel');
+        });
+        container.appendChild(button);
+      });
+    }
+
+    function taskWord(count) {
+      var lastTwo = Math.abs(count) % 100;
+      var last = lastTwo % 10;
+      if (lastTwo >= 11 && lastTwo <= 14) return 'задач';
+      if (last === 1) return 'задача';
+      if (last >= 2 && last <= 4) return 'задачи';
+      return 'задач';
+    }
+
+    function renderDifficulty(containerId, levels, selected) {
+      var container = document.getElementById(containerId);
+      container.innerHTML = '';
+      levels.forEach(function (item) {
+        var id = containerId + '-' + item.level;
+        var input = document.createElement('input');
+        input.type = 'radio';
+        input.name = containerId;
+        input.id = id;
+        input.value = item.level;
+        input.checked = Number(item.level) === Number(selected);
+
+        var label = document.createElement('label');
+        label.setAttribute('for', id);
+
+        var strong = document.createElement('strong');
+        strong.textContent = item.level + ' · ' + item.xp + ' XP';
+        var span = document.createElement('span');
+        span.textContent = shortDescription(item.level);
+
+        label.appendChild(strong);
+        label.appendChild(span);
+        container.appendChild(input);
+        container.appendChild(label);
+      });
+    }
+
+    function renderAbsenceTypes(types) {
+      var select = document.getElementById('absenceType');
+      var current = select.value;
+      select.innerHTML = '';
+
+      types.forEach(function (item) {
+        select.appendChild(new Option(item, item));
+      });
+
+      if (Array.from(select.options).some(function (option) {
+        return option.value === current;
+      })) {
+        select.value = current;
+      }
+    }
+
+    function renderAbsenceOptions() {
+      var select = document.getElementById('absenceSelect');
+      var current = state.selectedAbsenceId;
+      select.innerHTML = '';
+      select.appendChild(new Option('Новое отсутствие', ''));
+
+      (state.data.absences || []).forEach(function (item) {
+        var dates = item.startDisplay === item.endDisplay
+          ? item.startDisplay
+          : item.startDisplay + '–' + item.endDisplay;
+        select.appendChild(new Option(dates + ' · ' + item.type, item.id));
+      });
+
+      if (Array.from(select.options).some(function (option) {
+        return option.value === current;
+      })) {
+        select.value = current;
+      } else {
+        state.selectedAbsenceId = '';
+        select.value = '';
+      }
+
+      renderSelectedAbsence();
+    }
+
+    function selectedAbsence() {
+      if (!state.data || !state.selectedAbsenceId) return null;
+      return (state.data.absences || []).find(function (item) {
+        return item.id === state.selectedAbsenceId;
+      }) || null;
+    }
+
+    function renderSelectedAbsence() {
+      var item = selectedAbsence();
+      var typeSelect = document.getElementById('absenceType');
+
+      document.getElementById('absenceStart').value = item
+        ? item.start
+        : state.data.today;
+      document.getElementById('absenceEnd').value = item
+        ? item.end
+        : state.data.today;
+      document.getElementById('absenceComment').value = item
+        ? item.comment
+        : '';
+
+      if (item) {
+        typeSelect.value = item.type;
+      } else if (typeSelect.options.length) {
+        typeSelect.selectedIndex = 0;
+      }
+
+      document.getElementById('deleteAbsenceButton')
+        .classList.toggle('hidden', !item);
+    }
+
+    function renderAbsenceList() {
+      var container = document.getElementById('absenceList');
+      var items = state.data.absences || [];
+      container.innerHTML = '';
+
+      if (!items.length) {
+        var empty = document.createElement('div');
+        empty.className = 'hint';
+        empty.textContent = 'Запланированных периодов пока нет.';
+        container.appendChild(empty);
+        return;
+      }
+
+      items.forEach(function (item) {
+        var block = document.createElement('div');
+        block.className = 'absence-item';
+        block.tabIndex = 0;
+
+        var dates = document.createElement('div');
+        dates.className = 'absence-dates';
+        dates.textContent = item.startDisplay === item.endDisplay
+          ? item.startDisplay
+          : item.startDisplay + ' — ' + item.endDisplay;
+
+        var meta = document.createElement('div');
+        meta.className = 'absence-meta';
+        meta.textContent = item.type + (item.comment ? ' · ' + item.comment : '');
+
+        block.appendChild(dates);
+        block.appendChild(meta);
+        block.addEventListener('click', function () {
+          state.selectedAbsenceId = item.id;
+          document.getElementById('absenceSelect').value = item.id;
+          renderSelectedAbsence();
+        });
+        block.addEventListener('keydown', function (event) {
+          if (event.key === 'Enter' || event.key === ' ') block.click();
+        });
+        container.appendChild(block);
+      });
+    }
+
+    function shortDescription(level) {
+      if (Number(level) === 1) return 'до 15 минут';
+      if (Number(level) === 2) return 'получить / сдать';
+      return 'документ / анализ';
+    }
+
+    function renderCaseOptions() {
+      if (!state.data) return;
+
+      var search = document.getElementById('caseSearch').value.trim().toLowerCase();
+      var showCompleted = document.getElementById('showCompleted').checked;
+      var select = document.getElementById('caseSelect');
+      var current = state.selectedCaseId;
+
+      select.innerHTML = '';
+      select.appendChild(new Option('Выберите дело…', ''));
+
+      state.data.cases
+        .filter(function (item) {
+          if (!showCompleted && item.completed) return false;
+          var haystack = [item.client, item.dispute, item.subject, item.task]
+            .join(' ')
+            .toLowerCase();
+          return !search || haystack.indexOf(search) !== -1;
+        })
+        .sort(function (a, b) {
+          var byClient = String(a.client || '').localeCompare(
+            String(b.client || ''),
+            'ru',
+            { sensitivity: 'base' }
+          );
+          if (byClient) return byClient;
+
+          var byDispute = String(a.dispute || '').localeCompare(
+            String(b.dispute || ''),
+            'ru',
+            { sensitivity: 'base' }
+          );
+          if (byDispute) return byDispute;
+
+          var bySubject = String(a.subject || '').localeCompare(
+            String(b.subject || ''),
+            'ru',
+            { sensitivity: 'base' }
+          );
+          if (bySubject) return bySubject;
+
+          return String(a.id || '').localeCompare(String(b.id || ''));
+        })
+        .forEach(function (item) {
+          var suffix = item.dispute ? ' — ' + item.dispute : '';
+          var completed = item.completed ? ' ✓' : '';
+          select.appendChild(new Option(item.client + suffix + completed, item.id));
+        });
+
+      if (Array.from(select.options).some(function (option) {
+        return option.value === current;
+      })) {
+        select.value = current;
+      } else {
+        state.selectedCaseId = '';
+        select.value = '';
+      }
+
+      renderSelectedCase();
+    }
+
+    function selectedCase() {
+      if (!state.data || !state.selectedCaseId) return null;
+      return state.data.cases.find(function (item) {
+        return item.id === state.selectedCaseId;
+      }) || null;
+    }
+
+    function renderSelectedCase() {
+      var item = selectedCase();
+      var card = document.getElementById('caseCard');
+
+      if (!item) {
+        document.getElementById('caseSelect').title = 'Выберите дело';
+        document.getElementById('caseExtraDetails').open = false;
+        state.caseExtraId = '';
+        card.classList.remove('visible');
+        state.actProgress = null;
+        document.getElementById('actsLast').textContent = 'Выберите дело выше, чтобы увидеть акты.';
+        document.getElementById('actsRows').textContent = '';
+        document.getElementById('actsClose').classList.add('hidden');
+        document.getElementById('actsHonorClose').classList.add('hidden');
+        clearCaseForms();
+        renderEventOptions();
+        return;
+      }
+
+      card.classList.add('visible');
+      var stickyCaption = (item.client || 'Дело без названия') +
+        (item.dispute ? ' · ' + item.dispute : '');
+      document.getElementById('caseSelect').title = stickyCaption;
+      if (state.caseExtraId !== item.id) {
+        document.getElementById('caseExtraDetails').open = false;
+        state.caseExtraId = item.id;
+      }
+      loadActProgress(item.id);
+      document.getElementById('caseClient').textContent = item.client;
+      document.getElementById('caseDispute').textContent = item.dispute || '—';
+      document.getElementById('caseSubject').textContent = item.subject || '—';
+      document.getElementById('caseTask').textContent = item.task || 'задача не указана';
+      document.getElementById('caseTaskType').textContent =
+        item.taskType || 'не распределено';
+      document.getElementById('caseDeadline').textContent = item.deadlineDisplay || 'не назначена';
+      document.getElementById('caseLegalDeadline').textContent = item.legalDeadlineDisplay || 'не указан';
+      renderCaseNextEvent(item);
+      document.getElementById('caseLegalBasis').textContent = item.legalBasis || '—';
+      document.getElementById('caseLegalBasisLine').classList.toggle('hidden', !item.legalBasis);
+      ['stage', 'event', 'edit'].forEach(function (panel) {
+        document.getElementById(panel + 'LegalDeadline').value = item.legalDeadline || '';
+        document.getElementById(panel + 'LegalBasis').value = item.legalBasis || '';
+      });
+
+      document.getElementById('nextTask').value = item.task || '';
+      document.getElementById('nextTaskType').value = item.taskType || '';
+      document.getElementById('nextDeadline').value = item.deadline || '';
+      document.getElementById('completeMatterStage').checked = false;
+      setSelectedDifficulty(item.taskTypeLevel || 1);
+
+      document.getElementById('editClient').value = item.client || '';
+      document.getElementById('editDispute').value = item.dispute || '';
+      document.getElementById('editSubject').value = item.subject || '';
+      document.getElementById('editTask').value = item.task || '';
+      document.getElementById('editTaskType').value = item.taskType || '';
+      document.getElementById('editDeadline').value = item.deadline || '';
+      document.getElementById('completeMatterEdit').checked = Boolean(item.completed);
+
+      item.caseNumbers.forEach(function (pair, index) {
+        document.getElementById('caseNumber' + index).value = pair.number || '';
+        document.getElementById('caseLink' + index).value = pair.link || '';
+        updateCaseLinkButton(index);
+      });
+
+      renderEventOptions();
+    }
+
+    // Ближайшее ещё не завершённое с/з/встреча именно этого CASE ID.
+    // Сервер уже возвращает события с датой YYYY-MM-DD: новых вызовов API нет.
+    function renderCaseNextEvent(item) {
+      var today = state.data.today || '';
+      var next = (state.data.events || [])
+        .filter(function (event) {
+          return event.caseId === item.id &&
+            event.date && event.date >= today && !event.result;
+        })
+        .sort(function (a, b) {
+          var dateDiff = a.date.localeCompare(b.date);
+          if (dateDiff) return dateDiff;
+          return String(a.time || '99:99').localeCompare(String(b.time || '99:99'));
+        })[0];
+
+      document.getElementById('caseNextEvent').textContent = next
+        ? [next.dateDisplay || next.date, next.timeDisplay || next.time]
+          .filter(Boolean).join(' · ')
+        : 'не назначено';
+    }
+
+    function clearCaseForms() {
+      ['nextTask', 'nextDeadline', 'editClient', 'editDispute', 'editSubject', 'editTask', 'editDeadline', 'editLegalDeadline', 'editLegalBasis', 'stageLegalDeadline', 'stageLegalBasis', 'eventLegalDeadline', 'eventLegalBasis']
+        .forEach(function (id) {
+          document.getElementById(id).value = '';
+        });
+      document.getElementById('nextTaskType').value = '';
+      document.getElementById('editTaskType').value = '';
+      for (var i = 0; i < 3; i++) {
+        document.getElementById('caseNumber' + i).value = '';
+        document.getElementById('caseLink' + i).value = '';
+        updateCaseLinkButton(i);
+      }
+    }
+
+    function loadActProgress(caseId) {
+      var card = document.getElementById('actsCard');
+      card.classList.add('visible');
+      document.getElementById('actsLast').textContent = 'Загружаю даты актов…';
+      document.getElementById('actsRows').textContent = '';
+      document.getElementById('actsClose').classList.add('hidden');
+      document.getElementById('actsHonorClose').classList.add('hidden');
+      google.script.run
+        .withSuccessHandler(function (progress) {
+          if (state.selectedCaseId !== caseId) return;
+          state.actProgress = progress;
+          renderActProgress();
+        })
+        .withFailureHandler(function (error) {
+          if (state.selectedCaseId !== caseId) return;
+          document.getElementById('actsLast').textContent = 'Не удалось загрузить акты';
+          handleFailure(error);
+        })
+        .getActProgressFromHQ(caseId);
+    }
+
+    function renderActProgress() {
+      var progress = state.actProgress;
+      if (!progress) return;
+      document.getElementById('actsLast').textContent = progress.lastClosed
+        ? 'Последний закрытый: акт ' + progress.lastClosed.number + ' · ' + progress.lastClosed.dateDisplay
+        : 'Закрытых актов пока нет';
+      var rows = document.getElementById('actsRows');
+      rows.textContent = '';
+      progress.acts.forEach(function (act) {
+        var line = document.createElement('div');
+        line.className = 'acts-line';
+        var label = document.createElement('span');
+        label.textContent = 'Акт ' + act.number;
+        var value = document.createElement('span');
+        value.textContent = act.dateDisplay || 'Не сдан';
+        line.appendChild(label);
+        line.appendChild(value);
+        rows.appendChild(line);
+      });
+      var honor = progress.honorAct;
+      if (honor && honor.hasHonorarium) {
+        var extra = document.createElement('div');
+        extra.className = 'acts-line';
+        var title = document.createElement('span');
+        title.textContent = 'Акт на гонорар (20%)';
+        var value = document.createElement('span');
+        value.textContent = (honor.dateDisplay || 'Не сдан') + ' · ' +
+          Number(honor.amount || 0).toLocaleString('ru-RU') + ' ₽';
+        extra.appendChild(title);
+        extra.appendChild(value);
+        rows.appendChild(extra);
+      }
+      var mayCloseHonor = !!(honor && honor.hasHonorarium && !honor.dateDisplay);
+      document.getElementById('actsHonorClose').classList.toggle('hidden', !mayCloseHonor);
+      if (mayCloseHonor) document.getElementById('actsHonorDate').value = state.data.today;
+      var next = progress.nextAct;
+      document.getElementById('actsClose').classList.toggle('hidden', !next);
+      if (next) {
+        document.getElementById('actsDateLabel').textContent = 'Дата сдачи акта ' + next;
+        document.getElementById('actsDate').value = state.data.today;
+        document.getElementById('actsSave').textContent = 'Отметить сдачу акта ' + next;
+      }
+    }
+
+    function saveActClosure() {
+      var progress = state.actProgress;
+      if (!progress || !progress.nextAct || progress.caseId !== state.selectedCaseId) return;
+      var date = document.getElementById('actsDate').value;
+      if (!date) { showToast('Укажите дату сдачи акта', 'error'); return; }
+      var button = document.getElementById('actsSave');
+      button.disabled = true;
+      google.script.run
+        .withSuccessHandler(function (response) {
+          button.disabled = false;
+          showToast(response.message);
+          if (state.selectedCaseId === progress.caseId) loadActProgress(progress.caseId);
+        })
+        .withFailureHandler(function (error) {
+          button.disabled = false;
+          handleFailure(error);
+        })
+        .closeActFromHQ({ caseId: progress.caseId, actNumber: progress.nextAct, date: date });
+    }
+
+    function saveHonorActClosure() {
+      var progress = state.actProgress;
+      if (!progress || progress.caseId !== state.selectedCaseId ||
+          !progress.honorAct || !progress.honorAct.hasHonorarium || progress.honorAct.dateDisplay) return;
+      var date = document.getElementById('actsHonorDate').value;
+      if (!date) { showToast('Укажите дату сдачи гонорарного акта', 'error'); return; }
+      var button = document.getElementById('actsHonorSave');
+      button.disabled = true;
+      google.script.run
+        .withSuccessHandler(function (response) {
+          button.disabled = false;
+          showToast(response.message);
+          if (state.selectedCaseId === progress.caseId) loadActProgress(progress.caseId);
+        })
+        .withFailureHandler(function (error) {
+          button.disabled = false;
+          handleFailure(error);
+        })
+        .closeHonorActFromHQ({ caseId: progress.caseId, date: date });
+    }
+
+    function renderEventOptions() {
+      var select = document.getElementById('eventSelect');
+      select.innerHTML = '';
+      select.appendChild(new Option('Новое заседание / встреча', ''));
+
+      if (state.data && state.selectedCaseId) {
+        state.data.events
+          .filter(function (item) {
+            return item.caseId === state.selectedCaseId;
+          })
+          .forEach(function (item) {
+            var time = item.timeDisplay ? ' ' + item.timeDisplay : '';
+            var place = item.place ? ' — ' + item.place : '';
+            select.appendChild(new Option(item.dateDisplay + time + place, item.eventId));
+          });
+      }
+
+      renderSelectedEvent();
+    }
+
+    function renderSelectedEvent() {
+      var eventId = document.getElementById('eventSelect').value;
+      var item = eventId && state.data
+        ? state.data.events.find(function (event) {
+            return event.eventId === eventId;
+          })
+        : null;
+
+      document.getElementById('deleteEventButton').classList.toggle('hidden', !item);
+      document.getElementById('eventDate').value = item ? item.date : state.data.today;
+      document.getElementById('eventTime').value = item ? item.time : '';
+      document.getElementById('eventPlace').value = item ? item.place : '';
+      document.getElementById('eventResult').value = item ? item.result : '';
+      document.getElementById('eventCountXp').checked = Boolean(item && item.xpRecorded);
+      document.getElementById('eventReward').textContent = item && item.xpRecorded
+        ? '50 XP за это событие уже начислены'
+        : 'За заседание или встречу: 50 XP';
+      document.getElementById('eventReward').classList.toggle(
+        'hidden',
+        !(item && item.xpRecorded)
+      );
+      document.getElementById('nextEventBlock').classList.toggle('hidden', !item);
+      document.getElementById('nextEventDate').value = '';
+      document.getElementById('nextEventTime').value = '';
+      document.getElementById('nextEventPlace').value = '';
+      resetEventTaskControls();
+    }
+
+    function toggleEventTaskControls() {
+      var active = document.getElementById('eventTaskUpdate').checked;
+      document.getElementById('eventTaskControls').classList.toggle('hidden', !active);
+    }
+
+    function toggleEventTaskDone() {
+      var checked = document.getElementById('eventTaskDone').checked;
+      if (checked) {
+        document.getElementById('eventTaskUpdate').checked = true;
+        // Завершение прежней задачи не должно оставлять её как новую по умолчанию.
+        document.getElementById('eventTaskNew').value = '';
+        document.getElementById('eventTaskType').value = '';
+      } else {
+        var item = selectedCase();
+        document.getElementById('eventTaskNew').value = item ? item.task || '' : '';
+        document.getElementById('eventTaskType').value = item ? item.taskType || '' : '';
+      }
+      document.getElementById('eventTaskDoneFields').classList.toggle('hidden', !checked);
+      toggleEventTaskControls();
+    }
+
+    function resetEventTaskControls() {
+      var item = selectedCase();
+      document.getElementById('eventTaskUpdate').checked = false;
+      document.getElementById('eventTaskDone').checked = false;
+      document.getElementById('eventTaskDoneFields').classList.add('hidden');
+      document.getElementById('eventTaskResult').value = '';
+      document.getElementById('eventTaskNew').value = item ? item.task || '' : '';
+      document.getElementById('eventTaskType').value = item ? item.taskType || '' : '';
+      document.getElementById('eventTaskDeadline').value = item ? item.deadline || '' : '';
+      document.getElementById('eventTaskFollowDate').checked = true;
+      document.getElementById('eventTaskCurrent').textContent = item
+        ? 'Задача: ' + (item.task || 'не назначена') +
+          '\nПлан: ' + (item.deadlineDisplay || 'нет даты')
+        : 'Выберите дело.';
+      var difficulty = item && item.taskTypeLevel || 1;
+      var radio = document.querySelector(
+        'input[name="eventTaskDifficulty"][value="' + difficulty + '"]'
+      );
+      if (radio) radio.checked = true;
+      toggleEventTaskControls();
+    }
+
+    function syncEventTaskDeadline() {
+      var nextDate = document.getElementById('nextEventDate').value;
+      var follow = document.getElementById('eventTaskFollowDate').checked;
+      if (nextDate && follow) {
+        document.getElementById('eventTaskDeadline').value = nextDate;
+        document.getElementById('eventTaskUpdate').checked = true;
+      } else if ((!nextDate && follow) ||
+                 (!follow && nextDate &&
+                  document.getElementById('eventTaskDeadline').value === nextDate)) {
+        // Отключение автоматической синхронизации возвращает прежний срок;
+        // пользователь может затем выбрать другую дату вручную.
+        var item = selectedCase();
+        document.getElementById('eventTaskDeadline').value = item ? item.deadline || '' : '';
+      }
+      toggleEventTaskControls();
+    }
+
+    function createCaseNumberFields() {
+      var container = document.getElementById('caseNumbers');
+      for (var i = 0; i < 3; i++) {
+        var block = document.createElement('div');
+        block.className = 'case-pair';
+
+        var title = document.createElement('div');
+        title.className = 'field-label';
+        title.textContent = 'Дело ' + (i + 1);
+
+        var row = document.createElement('div');
+        row.className = 'row';
+
+        var number = document.createElement('input');
+        number.id = 'caseNumber' + i;
+        number.placeholder = 'Номер';
+
+        var linkControl = document.createElement('div');
+        linkControl.className = 'case-link-control';
+        var link = document.createElement('input');
+        link.id = 'caseLink' + i;
+        link.type = 'url';
+        link.placeholder = 'https://…';
+        var openLink = document.createElement('button');
+        openLink.type = 'button';
+        openLink.className = 'secondary case-open-link';
+        openLink.textContent = 'Открыть ↗';
+        openLink.disabled = true;
+        openLink.dataset.caseLinkIndex = i;
+        openLink.addEventListener('click', function () {
+          openCaseLink(Number(this.dataset.caseLinkIndex));
+        });
+        link.addEventListener('input', function () {
+          updateCaseLinkButton(Number(this.dataset.caseLinkIndex));
+        });
+        link.dataset.caseLinkIndex = i;
+        linkControl.appendChild(link);
+        linkControl.appendChild(openLink);
+
+        row.appendChild(number);
+        row.appendChild(linkControl);
+        block.appendChild(title);
+        block.appendChild(row);
+        container.appendChild(block);
+      }
+    }
+
+    function updateCaseLinkButton(index) {
+      var input = document.getElementById('caseLink' + index);
+      var button = document.querySelector('[data-case-link-index="' + index + '"].case-open-link');
+      if (!input || !button) return;
+      try {
+        var url = new URL(input.value.trim());
+        button.disabled = !['http:', 'https:'].includes(url.protocol);
+      } catch (error) {
+        button.disabled = true;
+      }
+    }
+
+    function openCaseLink(index) {
+      var input = document.getElementById('caseLink' + index);
+      if (!input) return;
+      try {
+        var url = new URL(input.value.trim());
+        if (!['http:', 'https:'].includes(url.protocol)) throw new Error('Некорректная ссылка');
+        window.open(url.href, '_blank', 'noopener,noreferrer');
+      } catch (error) {
+        showToast('Укажите корректную ссылку http:// или https://', 'error');
+      }
+    }
+
+    function caseNumbersPayload() {
+      var result = [];
+      for (var i = 0; i < 3; i++) {
+        result.push({
+          number: document.getElementById('caseNumber' + i).value,
+          link: document.getElementById('caseLink' + i).value
+        });
+      }
+      return result;
+    }
+
+    function selectedDifficulty(containerId) {
+      var checked = document.querySelector('input[name="' + containerId + '"]:checked');
+      return checked ? Number(checked.value) : null;
+    }
+
+    function setSelectedDifficulty(level) {
+      var input = document.querySelector(
+        'input[name="stageDifficulty"][value="' + Number(level) + '"]'
+      );
+      if (input) input.checked = true;
+    }
+
+    function requireCase() {
+      if (!state.selectedCaseId) {
+        showToast('Сначала выберите дело.', 'error');
+        return false;
+      }
+      return true;
+    }
+
+    // LEGAL-DEADLINE-1.1-pre: одна кнопка в каждом разделе.
+    // Юридический срок сохраняется первым отдельным серверным методом.
+    // Затем — этап, заседание или план. В случае ошибки последнего шага
+    // сообщение явно указывает, что уже сохранилось: записи XP не дублируем.
+    function saveStage() {
+      if (!requireCase()) return;
+      var item = selectedCase();
+      if (!item) return;
+      var result = document.getElementById('stageResult').value.trim();
+      var completeMatter = document.getElementById('completeMatterStage').checked;
+      var nextTask = document.getElementById('nextTask').value.trim();
+      var nextTaskType = document.getElementById('nextTaskType').value;
+      var nextDeadline = document.getElementById('nextDeadline').value;
+      var planChanged = nextDeadline !== (item.deadline || '');
+      var taskChanged = nextTask !== (item.task || '').trim() ||
+        nextTaskType !== (item.taskType || '');
+
+      if (!result) {
+        if (taskChanged || completeMatter) {
+          showToast('Чтобы зафиксировать новую задачу, укажите результат этапа. Без результата задачу можно изменить в разделе «Дело».', 'error');
+          return;
+        }
+        if (planChanged && (!nextDeadline || !item.task)) {
+          showToast('Очистить план или изменить срок без узкой задачи можно в разделе «Дело».', 'error');
+          return;
+        }
+        saveLegalBeforeAction('stage', function (legalSaved) {
+          if (!planChanged) {
+            finishLegalOnly(legalSaved);
+            return;
+          }
+          savePlanOnly(item.id, nextDeadline, legalSaved);
+        });
+        return;
+      }
+      if (nextTask && !completeMatter && !nextTaskType) {
+        showToast('Выберите тип следующей задачи.', 'error');
+        return;
+      }
+      if (!document.getElementById('stageDate').value ||
+          !selectedDifficulty('stageDifficulty')) {
+        showToast('Укажите дату и сложность выполненного этапа.', 'error');
+        return;
+      }
+      if (!state.stageRequestId) state.stageRequestId = requestId();
+      var payload = {
+        requestId: state.stageRequestId,
+        caseId: state.selectedCaseId,
+        result: result,
+        creditDate: document.getElementById('stageDate').value,
+        difficulty: selectedDifficulty('stageDifficulty'),
+        nextTask: nextTask,
+        nextTaskType: nextTaskType,
+        nextDeadline: nextDeadline,
+        completeMatter: completeMatter,
+        caseNumbers: caseNumbersPayload()
+      };
+      saveLegalBeforeAction('stage', function (legalSaved) {
+        setLoading(true, 'Фиксирую этап и сроки…');
+        google.script.run
+          .withSuccessHandler(function (response) {
+            state.stageRequestId = null;
+            document.getElementById('stageResult').value = '';
+            showToast(response.message, 'success');
+            loadData(payload.completeMatter ? '' : payload.caseId);
+          })
+          .withFailureHandler(function (error) {
+            handleCombinedFailure(error, legalSaved);
+          })
+          .saveStageFromHQ(payload);
+      });
+    }
+
+    function eventMainHasChanges(payload) {
+      var eventItem = payload.eventId && state.data
+        ? (state.data.events || []).find(function (e) {
+            return e.eventId === payload.eventId;
+          }) : null;
+      var eventChanged = eventItem
+        ? payload.date !== (eventItem.date || '') ||
+          payload.time !== (eventItem.time || '') ||
+          payload.place !== (eventItem.place || '') ||
+          payload.result !== (eventItem.result || '') ||
+          payload.countXp !== Boolean(eventItem.xpRecorded)
+        : payload.date !== (state.data ? state.data.today : '') ||
+          Boolean(payload.time || payload.place || payload.result || payload.countXp);
+      return Boolean(eventChanged || payload.nextDate || payload.nextTime ||
+        payload.nextPlace || payload.taskDone);
+    }
+
+    function saveEvent() {
+      if (!requireCase()) return;
+      var item = selectedCase();
+      if (!item) return;
+      var countXp = document.getElementById('eventCountXp').checked;
+      var updateTask = document.getElementById('eventTaskUpdate').checked;
+      var taskDone = updateTask && document.getElementById('eventTaskDone').checked;
+      var taskResult = document.getElementById('eventTaskResult').value.trim();
+      if (taskDone && !taskResult) {
+        showToast('Укажите, что выполнено по текущей задаче.', 'error');
+        return;
+      }
+      if (countXp && !document.getElementById('eventResult').value.trim()) {
+        showToast('Чтобы начислить XP, укажите результат заседания.', 'error');
+        return;
+      }
+      var nextMeeting = document.getElementById('nextEventDate').value;
+      var followDate = document.getElementById('eventTaskFollowDate').checked;
+      var taskDeadline = updateTask && followDate && nextMeeting
+        ? nextMeeting
+        : document.getElementById('eventTaskDeadline').value;
+      var payload = {
+        eventId: document.getElementById('eventSelect').value,
+        caseId: state.selectedCaseId,
+        date: document.getElementById('eventDate').value,
+        time: document.getElementById('eventTime').value,
+        place: document.getElementById('eventPlace').value,
+        result: document.getElementById('eventResult').value,
+        countXp: countXp,
+        nextDate: nextMeeting,
+        nextTime: document.getElementById('nextEventTime').value,
+        nextPlace: document.getElementById('nextEventPlace').value,
+        updateTask: updateTask,
+        taskDone: taskDone,
+        taskResult: taskDone ? taskResult : '',
+        taskDifficulty: taskDone ? selectedDifficulty('eventTaskDifficulty') : null,
+        task: updateTask ? document.getElementById('eventTaskNew').value : '',
+        taskType: updateTask ? document.getElementById('eventTaskType').value : '',
+        taskDeadline: updateTask ? taskDeadline : '',
+        expectedTask: updateTask ? item.task || '' : '',
+        expectedTaskType: updateTask ? item.taskType || '' : '',
+        expectedDeadline: updateTask ? item.deadline || '' : ''
+      };
+      var mainEventChanged = eventMainHasChanges(payload);
+      var taskChanged = updateTask && (
+        payload.task.trim() !== (item.task || '').trim() ||
+        payload.taskType !== (item.taskType || '')
+      );
+      var planChanged = document.getElementById('eventTaskDeadline').value !==
+        (item.deadline || '');
+      if (!mainEventChanged && taskChanged) {
+        showToast('Изменить задачу без заседания можно в разделе «Дело».', 'error');
+        return;
+      }
+      if (mainEventChanged && !payload.date) {
+        showToast('Укажите дату заседания или встречи.', 'error');
+        return;
+      }
+      if (!mainEventChanged && planChanged &&
+          (!document.getElementById('eventTaskDeadline').value || !item.task)) {
+        showToast('Очистить план или изменить срок без узкой задачи можно в разделе «Дело».', 'error');
+        return;
+      }
+      saveLegalBeforeAction('event', function (legalSaved) {
+        if (!mainEventChanged) {
+          if (planChanged) {
+            savePlanOnly(item.id, document.getElementById('eventTaskDeadline').value, legalSaved);
+          } else {
+            finishLegalOnly(legalSaved);
+          }
+          return;
+        }
+        setLoading(true, 'Сохраняю заседание, задачу и сроки…');
+        google.script.run
+          .withSuccessHandler(function (response) {
+            showToast(response.message, 'success');
+            loadData(payload.caseId);
+          })
+          .withFailureHandler(function (error) {
+            handleCombinedFailure(error, legalSaved);
+          })
+          .saveMeetingFromHQ(payload);
+      });
+    }
+
+    // Перенос только плановой даты: без фиктивного заседания или XP.
+    function savePlanOnly(caseId, date, legalSaved) {
+      setLoading(true, 'Сохраняю плановую дату…');
+      google.script.run
+        .withSuccessHandler(function (response) {
+          showToast(legalSaved ? 'Плановая дата и юридический срок сохранены.'
+            : response.message, 'success');
+          loadData(caseId);
+        })
+        .withFailureHandler(function (error) {
+          handleCombinedFailure(error, legalSaved);
+        })
+        .rescheduleTaskFromHQ({caseId: caseId, deadline: date});
+    }
+
+    function finishLegalOnly(legalSaved) {
+      setLoading(false);
+      showToast(legalSaved ? 'Юридический срок сохранён.'
+        : 'Нет изменений для сохранения.', 'success');
+    }
+
+    function handleCombinedFailure(error, legalSaved) {
+      setLoading(false);
+      var message = error && error.message ? error.message : String(error || 'Неизвестная ошибка');
+      if (legalSaved) {
+        message = 'Юридический срок сохранён, остальные изменения — нет. ' +
+          message + ' Повторите сохранение после исправления.';
+      }
+      showToast(message, 'error');
+    }
+
+    function deleteEvent() {
+      var eventId = document.getElementById('eventSelect').value;
+      if (!eventId) return;
+      if (!confirm('Удалить выбранное заседание/встречу?')) return;
+
+      setLoading(true, 'Удаляю событие…');
+      google.script.run
+        .withSuccessHandler(function (response) {
+          showToast(response.message, 'success');
+          loadData(state.selectedCaseId);
+        })
+        .withFailureHandler(handleFailure)
+        .deleteMeetingFromHQ(eventId);
+    }
+
+    function syncLegalDeadlineEditors(origin) {
+      // Три раздела — один и тот же ближайший юридический срок по CASE ID.
+      var date = document.getElementById(origin + 'LegalDeadline').value;
+      var basis = document.getElementById(origin + 'LegalBasis').value;
+      ['stage', 'event', 'edit'].forEach(function (panel) {
+        if (panel === origin) return;
+        document.getElementById(panel + 'LegalDeadline').value = date;
+        document.getElementById(panel + 'LegalBasis').value = basis;
+      });
+    }
+
+    function saveLegalBeforeAction(panel, next) {
+      var item = selectedCase();
+      if (!item) {
+        showToast('Сначала выберите дело.', 'error');
+        return;
+      }
+      var date = document.getElementById(panel + 'LegalDeadline').value;
+      var basis = document.getElementById(panel + 'LegalBasis').value.trim();
+      if (basis && !date) {
+        showToast('Укажите юридический срок или очистите основание.', 'error');
+        return;
+      }
+      if (basis.length > 1000) {
+        showToast('Основание срока слишком длинное (до 1000 знаков).', 'error');
+        return;
+      }
+      if (date === (item.legalDeadline || '') && basis === (item.legalBasis || '')) {
+        next(false);
+        return;
+      }
+      var payload = {
+        caseId: item.id,
+        legalDeadline: date,
+        legalBasis: basis,
+        expectedLegalDeadline: item.legalDeadline || '',
+        expectedLegalBasis: item.legalBasis || ''
+      };
+      setLoading(true, 'Сохраняю юридический срок…');
+      google.script.run
+        .withSuccessHandler(function () {
+          // Сохраняем новые ожидаемые значения, чтобы после частичного
+          // успеха повторное нажатие не создало дубли или stale-ошибку.
+          var current = selectedCase();
+          if (current && current.id === payload.caseId) {
+            current.legalDeadline = date;
+            current.legalBasis = basis;
+            var pieces = date ? date.split('-') : [];
+            current.legalDeadlineDisplay = pieces.length === 3
+              ? [pieces[2], pieces[1], pieces[0]].join('.') : '';
+            document.getElementById('caseLegalDeadline').textContent =
+              current.legalDeadlineDisplay || 'не указан';
+            document.getElementById('caseLegalBasis').textContent = basis || '—';
+            document.getElementById('caseLegalBasisLine').classList.toggle('hidden', !basis);
+            ['stage', 'event', 'edit'].forEach(function (name) {
+              document.getElementById(name + 'LegalDeadline').value = date;
+              document.getElementById(name + 'LegalBasis').value = basis;
+            });
+          }
+          next(true);
+        })
+        .withFailureHandler(handleFailure)
+        .saveLegalDeadlineFromHQ(payload);
+    }
+
+    function caseDetailsChanged(payload, item) {
+      if (payload.client !== (item.client || '') ||
+          payload.dispute !== (item.dispute || '') ||
+          payload.subject !== (item.subject || '') ||
+          payload.task !== (item.task || '') ||
+          payload.taskType !== (item.taskType || '') ||
+          payload.deadline !== (item.deadline || '') ||
+          payload.completeMatter !== Boolean(item.completed)) return true;
+      var numbers = item.caseNumbers || [];
+      return payload.caseNumbers.some(function (pair, i) {
+        var old = numbers[i] || {};
+        return pair.number !== (old.number || '') || pair.link !== (old.link || '');
+      });
+    }
+
+    function saveCase() {
+      if (!requireCase()) return;
+      var item = selectedCase();
+      if (!item) return;
+      var payload = {
+        caseId: state.selectedCaseId,
+        client: document.getElementById('editClient').value,
+        dispute: document.getElementById('editDispute').value,
+        subject: document.getElementById('editSubject').value,
+        task: document.getElementById('editTask').value,
+        taskType: document.getElementById('editTaskType').value,
+        deadline: document.getElementById('editDeadline').value,
+        completeMatter: document.getElementById('completeMatterEdit').checked,
+        caseNumbers: caseNumbersPayload()
+      };
+      var mainChanged = caseDetailsChanged(payload, item);
+      if (mainChanged && !payload.client.trim()) {
+        showToast('Укажите клиента.', 'error');
+        return;
+      }
+      saveLegalBeforeAction('edit', function (legalSaved) {
+        if (!mainChanged) {
+          finishLegalOnly(legalSaved);
+          return;
+        }
+        setLoading(true, 'Сохраняю карточку и сроки…');
+        google.script.run
+          .withSuccessHandler(function (response) {
+            showToast(response.message, 'success');
+            loadData(payload.completeMatter ? '' : payload.caseId);
+          })
+          .withFailureHandler(function (error) {
+            handleCombinedFailure(error, legalSaved);
+          })
+          .saveCaseFromHQ(payload);
+      });
+    }
+
+    function saveAbsence() {
+      var start = document.getElementById('absenceStart').value;
+      var end = document.getElementById('absenceEnd').value || start;
+      var type = document.getElementById('absenceType').value;
+
+      if (!start) {
+        showToast('Укажите начало отсутствия.', 'error');
+        return;
+      }
+      if (end < start) {
+        showToast('Окончание не может быть раньше начала.', 'error');
+        return;
+      }
+      if (!type) {
+        showToast('Выберите тип отсутствия.', 'error');
+        return;
+      }
+
+      var payload = {
+        absenceId: state.selectedAbsenceId,
+        start: start,
+        end: end,
+        type: type,
+        comment: document.getElementById('absenceComment').value
+      };
+
+      setLoading(true, 'Сохраняю отсутствие…');
+      google.script.run
+        .withSuccessHandler(function (response) {
+          state.selectedAbsenceId = response.absenceId;
+          showToast(response.message, 'success');
+          loadData(state.selectedCaseId, response.absenceId);
+        })
+        .withFailureHandler(handleFailure)
+        .saveAbsenceFromHQ(payload);
+    }
+
+    function deleteAbsence() {
+      if (!state.selectedAbsenceId) return;
+      if (!confirm('Удалить выбранный период отсутствия?')) return;
+
+      setLoading(true, 'Удаляю отсутствие…');
+      google.script.run
+        .withSuccessHandler(function (response) {
+          state.selectedAbsenceId = '';
+          showToast(response.message, 'success');
+          loadData(state.selectedCaseId, '');
+        })
+        .withFailureHandler(handleFailure)
+        .deleteAbsenceFromHQ(state.selectedAbsenceId);
+    }
+
+    function requestId() {
+      return 'REQ-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
+    }
+
+    function setLoading(active, text) {
+      var loading = document.getElementById('loading');
+      if (text) loading.textContent = text;
+      loading.classList.toggle('hidden', !active);
+    }
+
+    function showToast(message, type) {
+      var toast = document.getElementById('toast');
+      toast.textContent = message || 'Готово';
+      toast.className = 'toast show ' + (type || '');
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(function () {
+        toast.className = 'toast';
+      }, 4500);
+    }
+
+    function handleFailure(error) {
+      setLoading(false);
+      var message = error && error.message ? error.message : String(error || 'Неизвестная ошибка');
+      showToast(message, 'error');
+    }
+  </script>
+<!--
+  Мои дела — мобильный интерфейс для существующего Штаб.html.
+  Предварительная версия MOB-UI-1.3.2-pre / 18.11.2026. Совместима с FOCUS-PRIORITY-1.3.2-pre.
+  Используется только из doGet() в МобильныйШтаб.gs.
+  В Sidebar не подключается. Никаких серверных вызовов не добавляет.
+-->
+<style id="mobileHeadquartersStyles">
+  :root {
+    --mobile-ink: #172b4a;
+    --mobile-blue: #1a73e8;
+    --mobile-stroke: #e0e6ef;
+    --mobile-page: #eff4ff;
+    --mobile-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  }
+
+  html {
+    scroll-padding-top: 92px;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: linear-gradient(180deg, #eef4ff 0%, #f8fbff 58%, #f0f4ff 100%);
+    color: var(--mobile-ink);
+    font: 15px/1.47 -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: contain;
+  }
+
+  /* Стили действуют только внутри опубликованного Web App. */
+  .app {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 12px 12px calc(var(--mobile-bottom) + 24px);
+  }
+
+  .hero {
+    margin: -12px -12px 14px;
+    padding: 19px 18px 17px;
+    background: var(--pattern-light), var(--grad-hero);
+    border-bottom: 1px solid #8caeff;
+    box-shadow: 0 8px 20px rgba(37, 99, 235, .18);
+  }
+
+  .hero h1 { font-size: 24px; line-height: 1.2; }
+  .hero p { font-size: 13px; margin-top: 6px; }
+
+  .summary {
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .metric {
+    min-width: 0;
+    padding: 13px 5px;
+    background: linear-gradient(180deg, #ffffff 0%, #eaf3ff 100%);
+    border: 1px solid #b8d0ff;
+    border-radius: 13px;
+    box-shadow: 0 1px 4px rgba(24, 53, 91, .04);
+  }
+  .metric-value { font-size: 23px; line-height: 1.15; }
+  .metric-label { font-size: 11px; line-height: 1.3; }
+
+  .level-card,
+  .week-card,
+  .weekly-review,
+  .milestone-card,
+  .achievements-card,
+  .focus-card,
+  .signal-card,
+  .mode-card,
+  .workspace-panel {
+    margin-bottom: 13px;
+    border-radius: 15px;
+    box-shadow: 0 2px 8px rgba(24, 53, 91, .035);
+  }
+
+  .workspace-panel {
+    margin: 3px 0 14px;
+    padding: 18px 14px 19px;
+    background: var(--grad-workspace);
+    border-color: #b9d4ff;
+  }
+
+  .workspace-heading { font-size: 18px; margin-bottom: 16px; }
+
+  /* iPhone: не вызываем автоматическое увеличение страницы при фокусе. */
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    max-width: 100%;
+    min-height: 46px;
+    font-size: 16px;
+    line-height: 1.4;
+    padding: 11px 12px;
+    border-radius: 11px;
+  }
+
+  textarea { min-height: 94px; }
+  textarea.compact { min-height: 73px; }
+  .field { margin-bottom: 15px; }
+  label, .field-label { font-size: 13px; margin-bottom: 7px; }
+  .check { font-size: 14px; min-height: 42px; align-items: center; }
+  .check input[type="checkbox"] { width: 19px; height: 19px; flex-shrink: 0; }
+
+  .tabs {
+    top: 0;
+    gap: 4px;
+    padding: 6px;
+    margin-bottom: 17px;
+    background: linear-gradient(135deg, #dbeafe 0%, #ddd6fe 100%);
+  }
+  .tab {
+    min-width: 0;
+    min-height: 45px;
+    padding: 7px 4px;
+    font-size: 12px;
+    line-height: 1.25;
+    border-radius: 9px;
+  }
+
+  button.primary,
+  button.secondary,
+  button.danger,
+  button.case-open-link {
+    min-height: 46px;
+    font-size: 14px;
+    border-radius: 11px;
+    touch-action: manipulation;
+  }
+  .quick-action,
+  .mode-filter,
+  .mode-item,
+  .link-button {
+    min-height: 42px;
+    font-size: 13px;
+    touch-action: manipulation;
+  }
+  .quick-action { padding: 9px 12px; }
+  .mode-filters { gap: 8px; padding: 4px 11px 12px; }
+  .mode-filter { padding: 11px 8px; }
+  .mode-task { font-size: 14px; }
+  .mode-meta { font-size: 12px; }
+  .mode-list { max-height: none; }
+
+  .priority-choice-group > summary { font-size: 13px; padding: 14px 12px; }
+  .priority-choice-card { padding: 14px 12px; }
+  .priority-choice-card .quick-action { min-height: 44px; }
+  .date-signal { font-size: 12px; line-height: 1.45; padding: 7px 9px; }
+  .focus-group-title { font-size: 13px; }
+  .focus-more-button { min-height: 46px; }
+  .focus-title { font-size: 16px; }
+  .focus-caption, .focus-score { font-size: 12px; }
+  .focus-item { padding: 13px 11px 13px 15px; }
+  .focus-main, .priority-choice-title { font-size: 14px; line-height: 1.43; }
+  .focus-meta, .priority-choice-card .signal-reason { font-size: 12px; line-height: 1.4; }
+  .focus-icon { width: 22px; font-size: 16px; }
+  .focus-actions { padding-left: 29px; gap: 7px; }
+  .focus-more, .focus-empty, .signal-empty { font-size: 13px; }
+  .focus-reschedule-title { font-size: 13px; }
+  .focus-reschedule-row { grid-template-columns: minmax(0, 1fr); }
+  .focus-footer { font-size: 12px; }
+
+  .signal-list { font-size: 14px; }
+  .signal-item { padding-top: 11px; padding-bottom: 11px; }
+  .signal-client, .signal-task { font-size: 14px; }
+  .signal-reason { font-size: 12px; }
+  .signal-actions { flex-wrap: wrap; gap: 7px; }
+
+  .case-card { padding: 14px; }
+  .sticky-case-nav { scroll-margin-top: 13px; }
+  .date-pair input[type="date"] { min-width: 0; font-size: 16px; padding: 10px 5px; }
+  .focus-item[hidden], .signal-item[hidden] { display: none !important; }
+  .case-title { font-size: 16px; }
+  .case-line { font-size: 14px; }
+  .case-pair { padding: 12px; }
+  .case-link-control { min-width: 0; }
+  .case-link-control input { min-width: 0; }
+  .acts-card { padding: 14px; }
+  .acts-last, .acts-line { font-size: 14px; }
+  .notice, .hint, .absence-meta { font-size: 13px; }
+  .absence-item { padding: 12px; }
+  .section-title { font-size: 14px; }
+
+  .week-card summary,
+  .weekly-review summary,
+  .achievements-card summary,
+  .focus-card summary,
+  .signal-card summary,
+  .mode-card summary,
+  .acts-card summary {
+    min-height: 48px;
+    align-items: center;
+    touch-action: manipulation;
+  }
+
+  .toast {
+    bottom: calc(var(--mobile-bottom) + 12px);
+    left: 12px;
+    right: 12px;
+    padding: 13px 15px;
+    font-size: 14px;
+    border-radius: 12px;
+  }
+
+  /* Постоянная навигация, не зависящая от системного нижнего индикатора. */
+  .mobile-headquarters-nav {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 15;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 2px;
+    padding: 7px max(8px, env(safe-area-inset-right, 0px))
+             calc(7px + env(safe-area-inset-bottom, 0px))
+             max(8px, env(safe-area-inset-left, 0px));
+    background: rgba(255, 255, 255, .97);
+    border-top: 1px solid #dbe3ee;
+    box-shadow: 0 -4px 18px rgba(15, 37, 67, .08);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
+
+  .mobile-headquarters-nav button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-width: 0;
+    min-height: 57px;
+    padding: 4px 2px;
+    border: 0;
+    border-radius: 12px;
+    color: #5e6b7c;
+    background: transparent;
+    font: 600 11px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  .mobile-headquarters-nav button[aria-pressed="true"] {
+    background: linear-gradient(135deg, #dbeafe 0%, #ddd6fe 100%);
+    color: #1d4ed8;
+  }
+
+  .mobile-headquarters-nav .nav-symbol {
+    font-size: 22px;
+    line-height: 1.1;
+    font-weight: 500;
+  }
+
+  .mobile-headquarters-nav button:focus-visible {
+    outline: 2px solid #1a73e8;
+    outline-offset: -2px;
+  }
+
+  @media (max-width: 380px) {
+    /* Перекрываем сужение из десктопного Штаб.html */
+    .app { padding: 11px 11px calc(var(--mobile-bottom) + 24px); }
+    .hero { margin: -11px -11px 13px; padding: 18px 15px; }
+    .workspace-panel { margin: 3px 0 14px; padding: 15px 11px; }
+    .summary { gap: 6px; }
+    .metric { padding: 12px 3px; }
+    .metric-value { font-size: 21px; }
+    .tab { padding: 7px 3px; font-size: 11px; }
+    .row { grid-template-columns: minmax(0, 1fr); }
+    .date-pair { grid-template-columns: minmax(0, 1fr); }
+  }
+
+  @media (min-width: 650px) {
+    .app { padding-left: 22px; padding-right: 22px; }
+    .hero { margin-left: -22px; margin-right: -22px; }
+    .workspace-panel { padding: 20px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { scroll-behavior: auto !important; }
+  }
+</style>
+
+<nav class="mobile-headquarters-nav" aria-label="Разделы мобильного Штаба">
+  <button type="button" data-mobile-target="today" aria-pressed="true">
+    <span class="nav-symbol" aria-hidden="true">☀</span><span>Сегодня</span>
+  </button>
+  <button type="button" data-mobile-target="cases" aria-pressed="false">
+    <span class="nav-symbol" aria-hidden="true">▤</span><span>Дела</span>
+  </button>
+  <button type="button" data-mobile-target="events" aria-pressed="false">
+    <span class="nav-symbol" aria-hidden="true">▦</span><span>События</span>
+  </button>
+  <button type="button" data-mobile-target="progress" aria-pressed="false">
+    <span class="nav-symbol" aria-hidden="true">◎</span><span>Прогресс</span>
+  </button>
+</nav>
+
+<script>
+(function () {
+  'use strict';
+  function mobileHeadquartersInit() {
+    var main = document.querySelector('main.app');
+    if (!main) return;
+
+    // Новый визуальный порядок — только в Web App. Перестановка готовых
+    // узлов сохраняет их IDs, существующие события и серверные вызовы.
+    var hero = main.querySelector('.hero');
+    if (hero) {
+      var sequence = [
+        main.querySelector('.summary'),
+        main.querySelector('.focus-card'),
+        document.getElementById('attentionCard'),
+        document.getElementById('waitingCard'),
+        document.getElementById('workModes'),
+        main.querySelector('.workspace-panel')
+      ];
+      var previous = hero;
+      sequence.forEach(function (element) {
+        if (element && element.parentNode === main) {
+          main.insertBefore(element, previous.nextSibling);
+          previous = element;
+        }
+      });
+    }
+
+    var nav = document.querySelector('.mobile-headquarters-nav');
+    if (!nav) return;
+
+    nav.addEventListener('click', function (event) {
+      var button = event.target.closest('button[data-mobile-target]');
+      if (!button || !nav.contains(button)) return;
+      var targetName = button.getAttribute('data-mobile-target');
+      var anchor;
+      if (targetName === 'today') {
+        anchor = main.querySelector('.focus-card');
+        if (anchor && anchor.tagName === 'DETAILS') anchor.open = true;
+      } else if (targetName === 'cases') {
+        anchor = document.getElementById('workspaceHeading');
+      } else if (targetName === 'events') {
+        var eventTab = main.querySelector('.tab[data-panel="eventPanel"]');
+        if (eventTab) eventTab.click();
+        anchor = document.getElementById('eventPanel');
+      } else if (targetName === 'progress') {
+        anchor = main.querySelector('.level-card');
+      }
+      if (!anchor) return;
+
+      var all = nav.querySelectorAll('button[data-mobile-target]');
+      Array.prototype.forEach.call(all, function (item) {
+        item.setAttribute('aria-pressed', item === button ? 'true' : 'false');
+      });
+
+      var reduced = window.matchMedia &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      anchor.scrollIntoView({behavior: reduced ? 'auto' : 'smooth', block: 'start'});
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', mobileHeadquartersInit);
+  } else {
+    mobileHeadquartersInit();
+  }
+}());
+</script>
+
+</body>
+</html>
