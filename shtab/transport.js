@@ -11,7 +11,7 @@
   }
 
   function createTransport(host, endpoint) {
-    let popup, peer, peerOrigin, nonce, pending;
+    let popup, peer, peerOrigin, nonce, pending,readyListener=()=>{};
     function clear(error) {
       if (!pending) return;
       host.clearTimeout(pending.timer);
@@ -27,6 +27,7 @@
       if (message.type === 'ready' && !peer) {
         peer = event.source;
         peerOrigin = event.origin;
+        Promise.resolve().then(readyListener).catch(()=>{});
         return;
       }
       if (event.source !== peer || event.origin !== peerOrigin || !pending ||
@@ -39,6 +40,8 @@
     }
     host.addEventListener('message', receive);
     return {
+      onReady(callback){readyListener=callback;},
+      confirmSaved(){if(this.ready())peer.postMessage({protocol,nonce,type:'saved'},peerOrigin);},
       connect() {
         clear(new Error('SYNC_RECONNECTED'));
         popup?.close();

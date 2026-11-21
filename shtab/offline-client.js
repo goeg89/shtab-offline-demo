@@ -2,20 +2,33 @@
   'use strict';
   const endpoint='https://script.google.com/macros/s/AKfycbzrOJxhfdcZqYDf-Y0fgVkEDOi18WirThrVWApQdXJ5dPYnIuDU2rtQNpu4QknJAeiiDg/exec';
   const transport=HQOfflineTransport.createTransport(window,endpoint);
-  let state={data:null,acts:{},queue:[],review:[]},chain=Promise.resolve(),syncing=false,dirty=false,storageDamaged=false;
-  const initialized=HQOfflineStore.read().then(saved=>{if(saved)state=saved;}).catch(()=>{storageDamaged=true;message('Локальная копия не читается. Перезапись остановлена, сохранённые данные оставлены на устройстве.');});
+  let state={data:null,acts:{},queue:[],review:[]},chain=Promise.resolve(),syncing=false,dirty=false,storageDamaged=false,durable=false;
+  const initialized=HQOfflineStore.read().then(saved=>{if(saved){state=saved;durable=Boolean(saved.data);}}).catch(()=>{storageDamaged=true;message('Локальная копия не читается. Перезапись остановлена, сохранённые данные оставлены на устройстве.');});
   function copy(value){return JSON.parse(JSON.stringify(value));}
   function message(text){const node=document.getElementById('offline-status');if(node)node.textContent=text;}
   function locked(fn){const next=chain.then(fn);chain=next.catch(()=>{});return next;}
-  async function persist(){if(storageDamaged)throw Error('OFFLINE_STORAGE_DAMAGED');if(HQOfflineStore.enabled())await HQOfflineStore.write(state);}
+  async function persist(){
+    if(storageDamaged)throw Error('OFFLINE_STORAGE_DAMAGED');
+    if(!HQOfflineStore.enabled())return false;
+    await HQOfflineStore.write(state);
+    const verified=await HQOfflineStore.read();
+    if(JSON.stringify(verified)!==JSON.stringify(state))throw Error('OFFLINE_SAVE_VERIFY');
+    durable=Boolean(verified.data);
+    return true;
+  }
   function view(){let result=copy(state.data);for(const op of state.queue)result=HQOfflineModel.project(result,op);return result;}
   function status(){
     if(storageDamaged)return message('Локальная копия не читается. Перезапись остановлена, сохранённые данные оставлены на устройстве.');
     if(state.queue.some(op=>op.status==='conflict'||op.status==='uncertain'))return message('Есть правка, требующая проверки. Открой очередь.');
     if(state.queue.length)return message('На устройстве сохранено действий: '+state.queue.length+'. Ожидают отправки.');
-    if(!navigator.onLine)return message('Без интернета. Открыта последняя сохранённая копия.');
-    if(transport.ready())message('Подключено к Google. Очередь пуста.');
-    else message('Офлайн-копия '+(state.data?'доступна.':'ещё не загружена.')+' Для обновления подключи Google.');
+    if(state.data){
+      if(!durable)return message('Дела загружены. Включи офлайн для сохранения на устройстве.');
+      const settings=document.getElementById('offline-settings');
+      if(settings&&!settings.dataset.openedByUser){settings.open=false;document.getElementById('offline-settings-toggle').setAttribute('aria-expanded','false');}
+      if(!navigator.onLine)return message('Без сети · дела сохранены на устройстве');
+      return message(transport.ready()?'Синхронизировано':'Дела сохранены на устройстве');
+    }
+    message('Первая загрузка ещё не завершена. Нужен доступ к Google.');
   }
   async function sync(){
     await initialized;
@@ -35,7 +48,11 @@
       }
       if(!state.queue.length){
         const before=JSON.stringify(state.data);
-        state.data=await transport.exchange({type:'read'});await persist();
+        state.data=await transport.exchange({type:'read'});
+        if(await persist()){
+          transport.confirmSaved();
+          const settings=document.getElementById('offline-settings');if(settings)delete settings.dataset.openedByUser;
+        }
         if(before!==JSON.stringify(state.data)&&!dirty&&typeof window.loadData==='function')setTimeout(()=>window.loadData(),0);
       }
       status();
@@ -77,13 +94,15 @@
   window.google={script:{run:runner(null,null)}};
   document.addEventListener('DOMContentLoaded',()=>{
     const panel=document.createElement('section');panel.className='offline-panel';
-    panel.innerHTML='<strong>Офлайн и синхронизация</strong><p id="offline-status" role="status">Открываем локальную копию…</p><p id="offline-shell">Сохраняем оболочку приложения…</p><div><button type="button" id="offline-enable">Разрешить офлайн на этом устройстве</button><button type="button" id="offline-connect">Подключить Google</button><button type="button" id="offline-sync">Отправить и обновить</button></div><details><summary>Сохранённые действия</summary><div id="offline-queue"></div></details>';
+    panel.innerHTML='<div class="offline-summary"><span id="offline-status" role="status">Открываем сохранённые дела…</span><button type="button" id="offline-settings-toggle" aria-controls="offline-settings" aria-expanded="false">Настройки</button></div><details id="offline-settings"><summary>Подключение и офлайн</summary><p id="offline-shell">Сохраняем оболочку приложения…</p><div><button type="button" id="offline-enable">Разрешить офлайн на этом устройстве</button><button type="button" id="offline-connect">Подключить Google</button><button type="button" id="offline-sync">Отправить и обновить</button></div><details id="offline-queue-details"><summary>Сохранённые действия</summary><div id="offline-queue"></div></details></details>';
     document.querySelector('.app').prepend(panel);
-    document.getElementById('offline-enable').onclick=async()=>{try{await initialized;await HQOfflineStore.enable();await persist();document.getElementById('offline-enable').hidden=true;message(state.data?'Данные и очередь зашифрованы на этом устройстве. Можно работать без интернета.':'Офлайн включён. Подключи Google для первой загрузки дел.');}catch(_){message('Не удалось включить локальное хранение.');}};
-    document.getElementById('offline-connect').onclick=()=>{message(transport.connect()?'Вернись из окна Google. Первая загрузка начнётся автоматически.':'Разреши открытие окна Google и повтори.');};
+    const settings=document.getElementById('offline-settings');
+    document.getElementById('offline-settings-toggle').onclick=()=>{settings.dataset.openedByUser=settings.open?'':'true';settings.open=!settings.open;document.getElementById('offline-settings-toggle').setAttribute('aria-expanded',String(settings.open));};
+    document.getElementById('offline-enable').onclick=async()=>{try{await initialized;if(storageDamaged)throw Error('OFFLINE_STORAGE_DAMAGED');await HQOfflineStore.enable();if(await persist()&&state.data)transport.confirmSaved();document.getElementById('offline-enable').hidden=true;status();}catch(_){message('Не удалось подтвердить сохранение локальной копии.');}};
+    document.getElementById('offline-connect').onclick=()=>{message(transport.connect()?'Идёт подключение Google. Дождись подтверждения сохранения дел, затем вернись в Штаб.':'Разреши открытие окна Google и повтори.');};
     document.getElementById('offline-sync').onclick=()=>void sync();
     document.addEventListener('input',event=>{if(event.target.matches('textarea,input:not([type="search"]):not([type="checkbox"])'))dirty=true;});
-    panel.querySelector('details').ontoggle=()=>{
+    document.getElementById('offline-queue-details').ontoggle=()=>{
       const box=document.getElementById('offline-queue');box.replaceChildren();
       for(const op of [...state.queue,...(state.review||[])]){
         const p=document.createElement('p');p.textContent=op.operation.editedAt+' · '+op.name+' · '+(op.message||'Ждёт отправки');box.append(p);
@@ -94,9 +113,12 @@
         }
       }
     };
-    initialized.then(()=>{document.getElementById('offline-enable').hidden=HQOfflineStore.enabled();status();});
+    initialized.then(()=>{document.getElementById('offline-enable').hidden=HQOfflineStore.enabled();settings.open=!state.data;status();});
     if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js',{scope:'./'}).then(()=>navigator.serviceWorker.ready).then(()=>{document.getElementById('offline-shell').textContent='Оболочка готова к запуску без интернета.';}).catch(()=>{document.getElementById('offline-shell').textContent='Оболочка не сохранена. Обнови страницу с интернетом.';});
   });
   window.addEventListener('online',()=>void sync());window.addEventListener('offline',status);
+  transport.onReady(()=>sync());
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden){status();void sync();}});
+  window.addEventListener('pageshow',()=>{void initialized.then(()=>{status();void sync();});});
   setInterval(()=>{if(!document.hidden)void sync();},15000);
 })();
