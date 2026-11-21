@@ -104,7 +104,7 @@
     const settings=document.getElementById('offline-settings');
     document.getElementById('offline-settings-toggle').onclick=()=>{settings.dataset.openedByUser=settings.open?'':'true';settings.open=!settings.open;document.getElementById('offline-settings-toggle').setAttribute('aria-expanded',String(settings.open));};
     document.getElementById('offline-enable').onclick=async()=>{const button=document.getElementById('offline-enable');button.disabled=true;message('Сохраняем зашифрованную копию…');try{await initialized;if(storageDamaged)throw Error('OFFLINE_STORAGE_DAMAGED');await HQOfflineStore.enable();if(await persist()&&state.data)transport.confirmSaved();button.hidden=true;status();}catch(_){message('Не удалось подтвердить сохранение локальной копии.');}finally{button.disabled=false;}};
-    document.getElementById('offline-connect').onclick=()=>{lastConfirmed=false;retryAfter=0;message(transport.connect()?'Идёт подключение Google. Дождись подтверждения сохранения дел, затем вернись в Штаб.':'Разреши открытие окна Google и повтори.');};
+    document.getElementById('offline-connect').onclick=()=>{lastConfirmed=false;retryAfter=0;message(transport.connect()?'Идёт подключение Google. Дождись загрузки и сохранения дел.':'Разреши открытие окна Google и повтори.');};
     document.getElementById('offline-sync').onclick=()=>{
       if(syncing)return message('Обмен уже выполняется. Дождись ответа Google.');
       if(!navigator.onLine)return message('Нет сети. Сохранённые дела и очередь доступны на устройстве.');
@@ -128,6 +128,7 @@
   });
   window.addEventListener('online',()=>void sync());window.addEventListener('offline',status);
   transport.onReady(()=>sync());
+  transport.onReturn(()=>status());
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){status();void sync();}});
   window.addEventListener('pageshow',()=>{void initialized.then(()=>{status();void sync();});});
   setInterval(()=>{if(!document.hidden)void sync();},15000);

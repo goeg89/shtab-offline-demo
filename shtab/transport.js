@@ -3,7 +3,8 @@
   const protocol='shtab-hq-offline-v1';
   const allowedOrigin=/^https:\/\/[a-z0-9-]+-script\.googleusercontent\.com$/;
   function createTransport(host,endpoint){
-    let popup,peer,origin,nonce,pending,readyListener=()=>{};
+    let popup,peer,origin,nonce,pending,readyListener=()=>{},returnListener=()=>{},returning=false;
+    const installed=host.navigator?.standalone===true||host.matchMedia?.('(display-mode: standalone)').matches===true;
     function finish(error,value){
       if(!pending)return;
       host.clearTimeout(pending.timeout);host.clearInterval(pending.retry);
@@ -25,7 +26,14 @@
       const message=event.data;
       if(!popup||!event.source||!allowedOrigin.test(event.origin)||message?.protocol!==protocol||message.nonce!==nonce)return;
       try{if(event.source.top!==popup)return;}catch(_){return;}
+      if(message.type==='return-to-app'&&installed&&returning&&event.source===peer&&event.origin===origin){
+        if(pending)return;
+        try{popup.close();}catch(_){}
+        try{host.focus?.();}catch(_){}
+        peer=null;Promise.resolve().then(returnListener).catch(()=>{});return;
+      }
       if(message.type==='ready'){
+        if(returning)return;
         const changed=peer!==event.source||origin!==event.origin;
         peer=event.source;origin=event.origin;
         if(pending)send();
@@ -38,10 +46,14 @@
     });
     return {
       onReady(callback){readyListener=callback;},
-      ready(){return Boolean(peer&&popup&&!popup.closed);},
-      confirmSaved(){if(this.ready())peer.postMessage({protocol,nonce,type:'saved'},origin);},
+      onReturn(callback){returnListener=callback;},
+      ready(){return Boolean(!returning&&peer&&popup&&!popup.closed);},
+      confirmSaved(){if(this.ready()&&!pending){
+        returning=installed;
+        peer.postMessage({protocol,nonce,type:'saved',returnToApp:installed},origin);
+      }},
       connect(){
-        finish(new Error('SYNC_RECONNECTED'));popup?.close();peer=null;
+        finish(new Error('SYNC_RECONNECTED'));popup?.close();peer=null;returning=false;
         nonce=host.crypto.randomUUID();const url=new URL(endpoint);url.searchParams.set('offlineHQ',nonce);
         popup=host.open(url.href,'_blank','popup');return Boolean(popup);
       },
