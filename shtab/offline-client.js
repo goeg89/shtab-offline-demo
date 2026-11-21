@@ -38,7 +38,7 @@
         if(before!==JSON.stringify(state.data)&&!dirty&&typeof window.loadData==='function')setTimeout(()=>window.loadData(),0);
       }
       status();
-    });}catch(_){message('Связь прервалась. Правки остаются в очереди и будут проверены при следующем подключении.');}
+    });}catch(error){console.warn('HQ offline exchange',error.name,error.message);message('Связь прервалась ('+error.message+'). Правки остаются в очереди.');}
     finally{syncing=false;}
   }
   async function rpc(name,arg){
