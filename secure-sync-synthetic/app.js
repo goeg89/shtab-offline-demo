@@ -1,4 +1,4 @@
-/* OFFLINE-SYNC-0.10-synthetic-pre (isolated end-to-end test candidate).
+/* OFFLINE-SYNC-0.10.2-synthetic-pre (isolated end-to-end test candidate).
  * A later UTC editedAt wins only for the same case/event and field.
  * Equal timestamps with different values keep the local value and report a tie.
  * Public static app; private snapshots and local drafts are encrypted in IndexedDB.
@@ -36,7 +36,7 @@
     'edit-result','save-edit','cancel-edit','status','sw-status',
     'quick-controls','quick-note','quick-status','quick-enable','quick-disable','quick-disable-locked',
     'trust-enable','trust-open-locked',
-    'edit-auth','edit-pass','edit-authorize','edit-auth-cancel','sync-connect','sync-status'];
+    'edit-auth','edit-pass','edit-authorize','edit-auth-cancel','sync-connect','sync-status','sync-now'];
   const el={};ids.forEach(id=>{el[id]=document.getElementById(id);});
 
   let envelope=null;
@@ -59,6 +59,22 @@
   let lastAcceptedUpload=null;
   let lastUploadHadConflict=false;
   let serverAccepted=null;
+  let connectTimer;
+
+  function showSync(message,state='idle'){
+    if(el['sync-status'].textContent!==message)el['sync-status'].textContent=message;
+    el['sync-status'].dataset.state=state;
+    const ready=syncTransport.ready();
+    el['sync-connect'].hidden=ready||quickView;
+    el['sync-now'].hidden=!ready||quickView;
+    el['sync-now'].disabled=syncWorking||!navigator.onLine;
+  }
+
+  function noteSaved(){
+    if(!navigator.onLine)showSync('Нет интернета. Правка ждёт отправки.');
+    else if(syncTransport.ready())showSync('Правка сохранена на устройстве. Ожидает отправки.');
+    else showSync('Правка сохранена на устройстве. Подключи Google для отправки.');
+  }
 
   async function syncWhenReady(){
     if(syncWorking||busy||quickView||document.hidden||!navigator.onLine||!cryptoKey||
@@ -68,6 +84,7 @@
     const allowed=item=>item.kind==='case'&&item.id==='CASE-SYNC-TEST-001'&&item.field==='task';
     const outgoing=serverAccepted===null?[]:window.ShtabTestSync.pendingChanges(journal.filter(allowed),serverAccepted);
     const encoded=JSON.stringify(outgoing);
+    if(outgoing.length&&encoded!==lastAcceptedUpload)showSync('Отправляем правку…');
     try{
       const round=await window.ShtabTestSync.exchangeJournal({transport:syncTransport,
         snapshotId:SYNC_SNAPSHOT,journal:encoded===lastAcceptedUpload?[]:outgoing,
@@ -86,13 +103,16 @@
           lastAcceptedUpload=encoded;
           lastUploadHadConflict=round.results.some(item=>['sheet-changed','timestamp-tie','different-snapshot','protected-formula','record-missing'].includes(item.status));
         }
-        if(current===generation)el['sync-status'].textContent=
-          lastUploadHadConflict
-            ? 'В таблице обнаружен конфликт. Локальная правка сохранена.'
-            : 'Последний обмен: '+new Date().toLocaleTimeString();
+        if(current===generation){
+          if(lastUploadHadConflict)showSync('Значение в таблице отличается. Локальная правка сохранена.','error');
+          else if(combined.changed||outgoing.length||el['sync-status'].dataset.state!=='success'){
+            const pending=window.ShtabTestSync.pendingChanges(journal.filter(allowed),serverAccepted);
+            showSync(pending.length?'Правка ждёт отправки.':'Синхронизировано с тестовой таблицей.',pending.length?'idle':'success');
+          }
+        }
       }finally{busy=false;}
-    }catch(_){if(current===generation)el['sync-status'].textContent='Обмен не выполнен. Локальные правки сохранены.';}
-    finally{syncWorking=false;}
+    }catch(_){if(current===generation)showSync('Не удалось синхронизировать. Локальные правки сохранены.','error');}
+    finally{syncWorking=false;el['sync-now'].disabled=!navigator.onLine;}
   }
 
   function fail(code) {const e=new Error(code);e.code=code;throw e;}
@@ -505,9 +525,9 @@
     const current=generation,key=cryptoKey,data=snapshot,id=snapshotId;
     try{
       await persistDrafts(proposed,key,data,id);
-      if(current===generation){journal=proposed;render();notify('Черновик зашифрован и сохранён на iPhone. В CRM ничего не отправлено.','success');}
+      if(current===generation){journal=proposed;render();noteSaved();notify('Правка сохранена на этом устройстве.','success');}
     }catch(e){if(current===generation)notify(errorMessage(e.code||'STORAGE'),'error');}
-    finally{busy=false;el['save-edit'].disabled=false;}
+    finally{busy=false;el['save-edit'].disabled=false;void syncWhenReady();}
   }
   async function handleImport(){
     if(busy||envelope)return;
@@ -538,6 +558,10 @@
     pendingEdit=null;el['edit-auth'].hidden=true;
     el.setup.hidden=true;el['unlock-zone'].hidden=true;el.viewer.hidden=false;
     mode='cases';offset=0;el.query.value='';render();
+    if(readOnly)showSync('Режим просмотра. Для обмена правками открой редактор.');
+    else if(!navigator.onLine)showSync('Нет интернета. Правки сохраняются на устройстве.');
+    else if(syncTransport.ready())showSync('Подключено к Google. Проверяем правки.');
+    else showSync('Подключи Google для обмена правками.');
     notify(readOnly?'Дела открыты автоматически в режиме просмотра. Для правок введи парольную фразу.':
       trustedEditEnabled?'Доверенное устройство: просмотр и локальные правки доступны без фразы. В CRM ничего не отправляется.':
       'Офлайн-копия открыта. Правки сохраняются на устройстве в зашифрованном виде.','success');
@@ -772,12 +796,23 @@
   el['sync-connect'].addEventListener('click',()=>{
     if(quickView||snapshotId!==SYNTHETIC_VAULT)return;
     serverAccepted=null;lastAcceptedUpload=null;lastUploadHadConflict=false;
-    el['sync-status'].textContent=syncTransport.connect()
-      ? 'Вернись из окна Google. Если сейф закрылся, открой его снова. Обмен начнётся автоматически.'
-      : 'Разреши открытие окна подключения и повтори.';
+    clearTimeout(connectTimer);
+    if(syncTransport.connect()){
+      showSync('Вернись из окна Google. Если сейф закрылся, открой его снова.');
+      connectTimer=setTimeout(()=>{
+        if(!syncTransport.ready()&&!document.hidden)showSync('Google не подтвердил подключение. Проверь окно входа или подключись снова.','error');
+      },20000);
+    }else showSync('Браузер не открыл окно Google. Разреши всплывающее окно и повтори.','error');
   });
+  el['sync-now'].addEventListener('click',()=>{lastAcceptedUpload=null;void syncWhenReady();});
   window.addEventListener('online',()=>void syncWhenReady());
-  setInterval(()=>void syncWhenReady(),12000);
+  window.addEventListener('offline',()=>showSync('Нет интернета. Правки сохраняются на устройстве.'));
+  setInterval(()=>{
+    if(!document.hidden&&cryptoKey&&!quickView&&!syncTransport.ready()&&!el['sync-now'].hidden){
+      showSync('Окно Google закрыто. Подключись снова для отправки правок.');
+    }
+    void syncWhenReady();
+  },12000);
   el['quick-enable'].addEventListener('click',handleQuickEnable);
   el['trust-enable'].addEventListener('click',handleTrustEnable);
   el['trust-open-locked'].addEventListener('click',()=>{if(!busy)void tryQuickUnlock();});

@@ -15,8 +15,7 @@
 <body>
 <main>
   <header>
-    <p class="eyebrow">Мои дела · тест синхронизации 0.10.1</p>
-    <h1>Офлайн-правки</h1>
+    <h1>Мои дела</h1>
     <p>Тестовый экран принимает только вымышленный сейф. После подключения текст тестовой задачи может передаваться в тестовую Google Sheets.</p>
     <div id="sw-status" class="small" role="status">Проверка офлайн-оболочки…</div>
   </header>
@@ -43,6 +42,16 @@
   </section>
   <section id="viewer" hidden>
     <div class="viewer-head"><h2>Тестовые данные</h2><button id="lock" type="button" class="ghost compact">Заблокировать</button></div>
+    <section class="sync-card" aria-labelledby="sync-title">
+      <div>
+        <h3 id="sync-title">Синхронизация</h3>
+        <p id="sync-status" role="status">Подключение не установлено.</p>
+      </div>
+      <div class="sync-actions">
+        <button id="sync-connect" type="button" class="secondary">Подключить Google</button>
+        <button id="sync-now" type="button" class="secondary" hidden>Синхронизировать</button>
+      </div>
+    </section>
     <section id="quick-controls">
       <h3>Доступ на доверенном устройстве</h3>
       <p id="quick-status" class="small"></p>
@@ -69,11 +78,8 @@
     <p class="small" id="tap-hint">Нажми на карточку дела или на кнопку «Изменить задачу и плановый срок». Для дел без строки на листе «Список» доступен только просмотр.</p>
     <div id="records"></div>
     <div class="pages"><button id="prev" class="ghost" type="button">Назад</button><button id="next" class="ghost" type="button">Далее</button></div>
-    <section id="journal-tools">
-      <h3>Обмен тестовой задачей</h3>
-      <button id="sync-connect" type="button" class="secondary">Подключить через Google</button>
-      <p id="sync-status" role="status">Подключение не установлено.</p>
-      <h3>Зашифрованный журнал изменений</h3>
+    <details id="journal-tools" class="backup-tools">
+      <summary>Резервная копия и перенос файла</summary>
       <p class="small">В журнале хранятся исходное значение, новое значение, идентификатор записи и время правки. Он зашифрован той же парольной фразой и привязан к этому снимку. Не содержит команд записи на сервер.</p>
       <button id="backup" type="button" class="secondary">Скачать зашифрованный журнал</button>
       <label for="restore-file">Объединить зашифрованные правки с другого устройства (без удаления текущих)</label>
@@ -81,11 +87,10 @@
       <input id="restore-file" type="file" accept=".json,.shtabchanges.json,application/json">
       <button id="restore" type="button" class="secondary">Автоматически объединить по времени правок</button>
       <button id="clear-drafts" type="button" class="ghost danger">Отменить все локальные правки</button>
-    </section>
+    </details>
   </section>
   <section id="editor" hidden>
     <h2 id="edit-title">Локальная правка</h2>
-    <p class="warning">Сохраняется только зашифрованный локальный черновик. Исходная CRM и юридический срок не изменяются.</p>
     <div id="case-edit-fields" hidden>
       <label for="edit-task">Текущая узкая задача</label>
       <textarea id="edit-task" rows="4" maxlength="5000" placeholder="Что сделать дальше"></textarea>
@@ -96,11 +101,11 @@
       <label for="edit-result">Результат судебного заседания / встречи</label>
       <textarea id="edit-result" rows="5" maxlength="5000" placeholder="Что произошло, какое действие требуется"></textarea>
     </div>
-    <button id="save-edit" type="button">Зашифровать и сохранить правку на iPhone</button>
+    <button id="save-edit" type="button">Сохранить правку</button>
     <button id="cancel-edit" type="button" class="ghost">Отмена</button>
   </section>
   <div id="status" role="status" class="status" aria-live="polite">Ожидается зашифрованная копия 0.9.</div>
-  <footer>OFFLINE-SYNC-0.10.1-synthetic-pre · проверка одной вымышленной задачи.</footer>
+  <footer>Тестовая версия 0.10.2 · одно вымышленное дело.</footer>
 </main>
 <script src="./sync-client.js" defer></script>
 <script src="./app.js" defer></script>

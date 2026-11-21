@@ -4,3 +4,11 @@ h1{font-size:26px;margin:4px 0 10px}h2{font-size:19px;margin:0 0 12px}h3{font-si
 #quick-controls{margin-top:16px;padding:12px;border:1px solid #cbd8e8;border-radius:12px;background:#f7faff}#quick-controls h3{margin-top:0}#quick-controls button{margin-top:9px}#edit-auth{border:2px solid #86aad6;padding:15px;border-radius:12px;background:#f8fbff;margin-top:17px}#edit-auth h3{margin-top:0}#quick-note{margin-top:13px}
 
 #trust-enable{background:#205f67;color:#fff}#trust-enable:disabled{opacity:.48}
+
+.sync-card{display:flex;align-items:center;justify-content:space-between;gap:14px;border:1px solid #cbd8e8;border-radius:12px;background:#f7faff;margin:16px 0;padding:14px}
+.sync-card h3,.sync-card p{margin:0}.sync-card p{margin-top:5px;min-height:1.5em}
+.sync-actions{flex-shrink:0}.sync-actions button{margin:0;min-height:44px}
+.sync-card:has([data-state="success"]){background:#e9f7ef;border-color:#b0d9c1}
+.sync-card:has([data-state="error"]){background:#fff4e6;border-color:#e5c68f}
+.backup-tools{border-top:1px solid #dbe4ef}.backup-tools summary{cursor:pointer;font-weight:650;padding:10px 0;color:#315785}
+@media(max-width:500px){.sync-card{align-items:stretch;flex-direction:column}.sync-actions button{width:100%}}
