@@ -15,9 +15,9 @@
 <body>
 <main>
   <header>
-    <p class="eyebrow">Мои дела · отдельный тест 0.9</p>
+    <p class="eyebrow">Мои дела · отдельный тест 0.9.3</p>
     <h1>Офлайн-правки</h1>
-    <p>Дела и заседания из <strong>тестовой копии</strong>. Изменения остаются зашифрованными на этом iPhone. <strong>Никакой записи в Google Sheets или автоматической синхронизации.</strong></p>
+    <p>Дела и заседания из <strong>тестовой копии</strong>. Изменения остаются зашифрованными в хранилище этого устройства. <strong>Никакой записи в Google Sheets или автоматической синхронизации.</strong></p>
     <div id="sw-status" class="small" role="status">Проверка офлайн-оболочки…</div>
   </header>
   <section id="setup">
@@ -36,20 +36,23 @@
     <label for="unlock-pass">Парольная фраза</label>
     <input id="unlock-pass" type="password" autocomplete="off" placeholder="Фраза от офлайн-файла 0.9">
     <button id="unlock" type="button">Открыть офлайн-редактор</button>
-    <button id="quick-disable-locked" class="ghost" type="button" hidden>Выключить быстрый просмотр на этом iPhone</button>
+    <button id="trust-open-locked" class="secondary" type="button" hidden>Открыть дела и правки без пароля</button>
+    <button id="quick-disable-locked" class="ghost" type="button" hidden>Отключить доверие к этому устройству</button>
     <button id="delete" class="danger ghost" type="button">Удалить локальную копию и все её правки</button>
     <p class="small">Храни отдельно исходный зашифрованный файл и резервные копии зашифрованного журнала. При очистке данных iPhone хранилище приложения может исчезнуть.</p>
   </section>
   <section id="viewer" hidden>
     <div class="viewer-head"><h2>Тестовые данные</h2><button id="lock" type="button" class="ghost compact">Заблокировать</button></div>
     <section id="quick-controls">
-      <h3>Быстрый просмотр на этом iPhone</h3>
+      <h3>Доступ на доверенном устройстве</h3>
       <p id="quick-status" class="small"></p>
-      <p class="small">Необязательный режим: при запуске дела сразу показываются без ввода 16-символьной фразы, даже без интернета. Для изменения задач, сроков и результатов фраза нужна. Ключ доступа сохраняется локально в приложении — <strong>все, кто разблокирует iPhone, смогут прочитать дела</strong>. Включай только на личном iPhone с код-паролем и блокировкой экрана. Это не разблокировка через Face ID.</p>
-      <button id="quick-enable" type="button" class="secondary">Включить быстрый просмотр (необязательно)</button>
-      <button id="quick-disable" type="button" class="ghost" hidden>Выключить быстрый просмотр</button>
+      <p class="small">На <strong>личном телефоне или компьютере</strong> можно один раз ввести фразу и разрешить этому браузеру открывать дела и сохранять локальные правки без дальнейшего ввода. При этом сохраняется неэкспортируемый ключ в хранилище этого сайта. Это <strong>не Google-вход</strong>: Google нужен для получения новой копии на сервере, а офлайн-приложение работает независимо.</p>
+      <p class="warning">В режиме полного доверия доступ к разблокированному устройству, браузерному профилю или коду этого сайта может означать доступ и к данным, и к редактированию. Не включай на чужом или общем устройстве. Данные остаются на устройстве; записи в Google Sheets по-прежнему нет.</p>
+      <button id="trust-enable" type="button" class="secondary">Разрешить просмотр и правки без пароля на этом устройстве</button>
+      <button id="quick-enable" type="button" class="ghost">Вместо этого: только быстрый просмотр (без правок)</button>
+      <button id="quick-disable" type="button" class="ghost" hidden>Отключить доступ без пароля</button>
     </section>
-    <p id="quick-note" class="warning" hidden>Быстрый просмотр: данные открыты только для чтения. Нажатие на дело для редактирования потребует парольную фразу. При сворачивании содержимое экрана скрывается.</p>
+    <p id="quick-note" class="warning" hidden>Включён режим только просмотра. Для редактирования требуется исходная парольная фраза. Для полного доверия сначала разблокируй редактирование фразой, затем включи разрешение выше.</p>
     <section id="edit-auth" hidden>
       <h3>Разрешить редактирование</h3>
       <label for="edit-pass">Парольная фраза от снимка 0.9</label>
@@ -94,7 +97,7 @@
     <button id="cancel-edit" type="button" class="ghost">Отмена</button>
   </section>
   <div id="status" role="status" class="status" aria-live="polite">Ожидается зашифрованная копия 0.9.</div>
-  <footer>OFFLINE-SECURE-0.9.2-quickview-safe-restore-pre · отдельный эксперимент · только тестовая CRM. Статическая оболочка публичная, клиентские данные и журнал хранятся только в шифротексте на устройстве. Нет сетевого API, отправки на сервер и аналитики.</footer>
+  <footer>OFFLINE-SECURE-0.9.3-trusted-device-pre · отдельный эксперимент · только тестовая CRM. Статическая оболочка публичная, клиентские данные и журнал хранятся только в шифротексте на устройстве. Нет сетевого API, отправки на сервер и аналитики.</footer>
 </main>
 <script src="./app.js" defer></script>
 </body>
