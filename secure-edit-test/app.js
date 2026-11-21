@@ -1,4 +1,6 @@
-/* OFFLINE-SECURE-0.9.3-trusted-device-pre (optional trusted-device offline view/edit; compatible vault 0.9).
+/* OFFLINE-SECURE-0.9.4-field-lww-pre (field-by-field last-write-wins merge; compatible encrypted vault 0.9).
+ * A later UTC editedAt wins only for the same case/event and field.
+ * Equal timestamps with different values keep the local value and report a tie.
  * Public static app; private snapshots and local drafts are encrypted in IndexedDB.
  * NO Google Sheets writes, API calls, background sync, plaintext in storage.
  * Data from an unlocked vault lives briefly in memory until background/lock.
@@ -63,7 +65,7 @@
     if(code==='HAS_VAULT')return 'Копия уже есть. Удаление старой копии уничтожит локальные правки — сначала сохрани журнал.';
     if(code==='NOT_EDITABLE')return 'У дела нет записи на листе «Список», поэтому здесь нельзя менять задачу.';
     if(code==='QUICK_NOT_SUPPORTED')return 'Safari не смог безопасно сохранить локальный ключ быстрого просмотра. Фраза по-прежнему работает; ничего не удалено.';
-    if(code==='MERGE_CONFLICT')return 'В резервном файле есть правки, отличающиеся от уже сохранённых на этом iPhone. Журнал НЕ изменён. Для разрешения конфликта нужна отдельная проверка.';
+    if(code==='MERGE_CONFLICT')return 'Не удалось автоматически объединить журнал. Текущие правки сохранены.';
     return 'Операция не выполнена; исходные данные и предыдущие правки сохранены.';
   }
   function supportsCrypto(){return!!(window.isSecureContext&&window.crypto&&crypto.subtle&&crypto.getRandomValues&&window.indexedDB);}
@@ -169,6 +171,36 @@
       tx.onabort=()=>reject(new Error('STORAGE'));
     });}finally{db.close();}
   }
+  // An edit timestamp is an exact UTC instant. ISO-8601 canonical strings sort by time.
+  function validEditTime(s){
+    if(typeof s!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(s))return false;
+    const t=Date.parse(s);
+    return Number.isFinite(t)&&new Date(t).toISOString()===s;
+  }
+  function changeKey(item){return item.kind+'|'+item.id+'|'+item.field;}
+  // Merge only matching fields of the exact same encrypted snapshot. Validity of
+  // both arrays and the matching snapshot is checked before this function runs.
+  // Equal timestamps with different values cannot identify the true last edit.
+  // In that rare case the local entry stays and the ambiguity is reported.
+  function mergeDraftsByTime(local,incoming){
+    const merged=local.slice(),at=new Map(local.map((item,i)=>[changeKey(item),i]));
+    const stats={added:0,replaced:0,keptLocal:0,sameValue:0,refreshedTime:0,ties:0};
+    for(const item of incoming){
+      const key=changeKey(item),index=at.get(key);
+      if(index===undefined){at.set(key,merged.length);merged.push(item);stats.added++;continue;}
+      const old=merged[index];
+      if(item.editedAt>old.editedAt){
+        merged[index]=item;
+        if(item.to===old.to)stats.refreshedTime++;
+        else stats.replaced++;
+      }else if(item.editedAt<old.editedAt){
+        if(item.to===old.to)stats.sameValue++;
+        else stats.keptLocal++;
+      }else if(item.to===old.to)stats.sameValue++;
+      else stats.ties++;
+    }
+    return {merged,stats,changed:stats.added+stats.replaced+stats.refreshedTime>0};
+  }
   function checkDrafts(items,data,hash){
     if(!Array.isArray(items)||items.length>4000)fail('JOURNAL_DAMAGED');
     const caseIndex=new Map(data.cases.map(c=>[c.caseId,c]));
@@ -179,14 +211,14 @@
         !['case','event'].includes(item.kind)||typeof item.id!=='string'||
         typeof item.field!=='string'||typeof item.from!=='string'||
         typeof item.to!=='string'||item.to.length>5000||
-        typeof item.editedAt!=='string'||item.editedAt.length>80)fail('JOURNAL_DAMAGED');
+        !validEditTime(item.editedAt))fail('JOURNAL_DAMAGED');
       const k=item.kind+'|'+item.id+'|'+item.field;
       if(unique.has(k))fail('JOURNAL_DAMAGED');unique.add(k);
       const record=item.kind==='case'?caseIndex.get(item.id):eventIndex.get(item.id);
       if(!record||(item.kind==='case'&&
         (record.source==='acts_only'||!editableCase.includes(item.field)))||
         (item.kind==='event'&&!editableEvent.includes(item.field))||
-        record[item.field]!==item.from||item.from===item.to||
+        record[item.field]!==item.from||
         (item.field==='planDate'&&!validDate(item.to)))fail('JOURNAL_DAMAGED');
     }
     return items;
@@ -411,18 +443,21 @@
     }:{result:el['edit-result'].value.trim()};
     if(!Object.entries(next).every(([k,v])=>v.length<=5000&&(k!=='planDate'||validDate(v))))
       return notify('Неправильная дата или слишком длинный текст.','error');
-    const fields=Object.keys(next);
-    const now=new Date().toISOString();
-    const proposed=journal.filter(x=>!(x.kind===target.kind&&x.id===target.id&&fields.includes(x.field)));
-    for(const field of fields){
-      if(next[field]!==source[field])proposed.push({kind:target.kind,id:target.id,field,
-        from:source[field],to:next[field],editedAt:now});
-    }
-    if(proposed.length===journal.length&&fields.every(f=>{
-      const prev=editedFor(target.kind,target.id,f);return (prev?.to??source[f])===next[f];
-    })){
+    const changedFields=Object.keys(next).filter(field=>{
+      const old=editedFor(target.kind,target.id,field);
+      return next[field]!== (old?old.to:source[field]);
+    });
+    if(!changedFields.length){
       el.editor.hidden=true;editTarget=null;return notify('Новых изменений нет.','');
     }
+    // Only changed fields get a new timestamp. Preserve all others exactly.
+    // A return to the snapshot value is an explicit timestamped reset marker;
+    // without it an older backup could reintroduce a cancelled value.
+    const now=new Date().toISOString();
+    const changedSet=new Set(changedFields);
+    const proposed=journal.filter(x=>!(x.kind===target.kind&&x.id===target.id&&changedSet.has(x.field)));
+    for(const field of changedFields)proposed.push({kind:target.kind,id:target.id,field,
+      from:source[field],to:next[field],editedAt:now});
     busy=true;el['save-edit'].disabled=true;
     const current=generation,key=cryptoKey,data=snapshot,id=snapshotId;
     try{
@@ -620,31 +655,29 @@
       validateLogBox(outer.encryptedJournal,snapshotId);
       const items=await decryptLog(outer.encryptedJournal,cryptoKey,snapshot,snapshotId);
       if(!items.length)fail('BAD_FORMAT');
-      const sameKey=x=>x.kind+'|'+x.id+'|'+x.field;
-      const existing=new Map(journal.map(x=>[sameKey(x),x]));
-      const merged=journal.slice();
-      let additional=0,already=0,conflicts=0;
-      for(const item of items){
-        const old=existing.get(sameKey(item));
-        if(!old){merged.push(item);additional++;}
-        else if(old.from===item.from&&old.to===item.to)already++;
-        else conflicts++;
-      }
+      // Field-by-field automatic last-write-wins. Different fields always coexist.
+      const {merged,stats,changed}=mergeDraftsByTime(journal,items);
       if(current!==generation||document.hidden)return;
-      if(conflicts){
-        return notify('Проверка файла пройдена, но есть конфликтующие правки: '+conflicts+
-          '. Ничего не заменено и не удалено. Совпадают: '+already+', новые: '+additional+'.','error');
+      const note='Новых полей: '+stats.added+
+        '; более поздних значений из файла: '+stats.replaced+
+        '; текущих более поздних значений сохранено: '+stats.keptLocal+
+        '; совпадают: '+stats.sameValue+
+        '; обновлено время без изменения значения: '+stats.refreshedTime+
+        '; равное время с разными значениями: '+stats.ties+'.';
+      const timeWarning=stats.ties?
+        ' При одинаковой отметке времени нельзя определить последнюю правку — оставлено значение на этом устройстве.':'';
+      if(!changed){
+        el['restore-file'].value='';
+        return notify('Журналы проверены. Изменять ничего не требуется. '+note+timeWarning,
+          stats.ties?'error':'success');
       }
-      if(!additional){el['restore-file'].value='';
-        return notify('Резервная копия подлинная и подходит этому снимку. Все '+already+
-          ' правки уже сохранены — ничего не изменено.','success');}
-      if(!window.confirm('Резервная копия проверена. Совпадают: '+already+
-        ', новых: '+additional+'. Без удаления старых правок ДОБАВИТЬ новые в шифрованный журнал?'))return;
-      if(current!==generation||document.hidden)return;
+      // Persist the newly encrypted journal first. In-memory state changes only
+      // after the IndexedDB transaction and its readback succeed.
       await persistDrafts(merged,cryptoKey,snapshot,snapshotId);
       if(current===generation){journal=merged;el['restore-file'].value='';render();
-        notify('Безопасное восстановление: добавлено правок '+additional+
-          '. Все существующие правки сохранены. В CRM ничего не отправлено.','success');}
+        notify('Автоматическое объединение по времени выполнено. '+note+
+          timeWarning+' Только локальные правки; в CRM ничего не отправлено.',
+          stats.ties?'error':'success');}
     }catch(e){if(current===generation)notify(errorMessage(e.code||'JOURNAL_DAMAGED'),'error');}
     finally{busy=false;el.restore.disabled=false;}
   }
