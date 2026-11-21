@@ -2,7 +2,7 @@
   'use strict';
   const endpoint='https://script.google.com/macros/s/AKfycbzrOJxhfdcZqYDf-Y0fgVkEDOi18WirThrVWApQdXJ5dPYnIuDU2rtQNpu4QknJAeiiDg/exec';
   const transport=HQOfflineTransport.createTransport(window,endpoint);
-  let state={data:null,acts:{},queue:[],review:[]},chain=Promise.resolve(),syncing=false,dirty=false,storageDamaged=false,durable=false;
+  let state={data:null,acts:{},queue:[],review:[]},chain=Promise.resolve(),syncing=false,dirty=false,storageDamaged=false,durable=false,lastConfirmed=false,retryAfter=0;
   const initialized=HQOfflineStore.read().then(saved=>{if(saved){state=saved;durable=Boolean(saved.data);}}).catch(()=>{storageDamaged=true;message('Локальная копия не читается. Перезапись остановлена, сохранённые данные оставлены на устройстве.');});
   function copy(value){return JSON.parse(JSON.stringify(value));}
   function message(text){const node=document.getElementById('offline-status');if(node)node.textContent=text;}
@@ -26,14 +26,15 @@
       const settings=document.getElementById('offline-settings');
       if(settings&&!settings.dataset.openedByUser){settings.open=false;document.getElementById('offline-settings-toggle').setAttribute('aria-expanded','false');}
       if(!navigator.onLine)return message('Без сети · дела сохранены на устройстве');
-      return message(transport.ready()?'Синхронизировано':'Дела сохранены на устройстве');
+      return message(transport.ready()&&lastConfirmed?'Синхронизировано':'Дела сохранены на устройстве');
     }
     message('Первая загрузка ещё не завершена. Нужен доступ к Google.');
   }
   async function sync(){
     await initialized;
-    if(syncing||!navigator.onLine||!transport.ready())return;
+    if(syncing||Date.now()<retryAfter||!navigator.onLine||!transport.ready())return;
     syncing=true;
+    const button=document.getElementById('offline-sync');if(button){button.disabled=true;button.textContent='Выполняется обмен…';}
     try{await locked(async()=>{
       for(const op of state.queue){
         if(op.status==='conflict'||op.status==='uncertain')break;
@@ -55,9 +56,13 @@
         }
         if(before!==JSON.stringify(state.data)&&!dirty&&typeof window.loadData==='function')setTimeout(()=>window.loadData(),0);
       }
+      lastConfirmed=true;retryAfter=0;
       status();
-    });}catch(error){console.warn('HQ offline exchange',error.name,error.message);message('Связь прервалась ('+error.message+'). Правки остаются в очереди.');}
-    finally{syncing=false;}
+    });}catch(error){
+      console.warn('HQ offline exchange',error.name,error.message);lastConfirmed=false;retryAfter=Date.now()+30000;
+      message(state.queue.length?'Подтверждение задерживается. Сохранено действий: '+state.queue.length+'. Очередь остаётся на устройстве.':'Обновление задерживается. Сохранённые дела доступны.');
+    }
+    finally{syncing=false;if(button){button.disabled=false;button.textContent='Отправить и обновить';}}
   }
   async function rpc(name,arg){
     await initialized;
@@ -67,7 +72,7 @@
       status();void sync();const data=view();data.newAchievements=[];return data;
     }
     if(name==='getActProgressFromHQ'){
-      if(transport.ready()&&!syncing){state.acts[arg]=await transport.exchange({type:'acts',caseId:arg});await persist();}
+      if(transport.ready())await locked(async()=>{state.acts[arg]=await transport.exchange({type:'acts',caseId:arg});await persist();});
       if(!state.acts[arg])throw Error('Даты актов этого дела ещё не сохранены. Открой их при подключении к Google.');
       return copy(state.acts[arg]);
     }
@@ -98,9 +103,14 @@
     document.querySelector('.app').prepend(panel);
     const settings=document.getElementById('offline-settings');
     document.getElementById('offline-settings-toggle').onclick=()=>{settings.dataset.openedByUser=settings.open?'':'true';settings.open=!settings.open;document.getElementById('offline-settings-toggle').setAttribute('aria-expanded',String(settings.open));};
-    document.getElementById('offline-enable').onclick=async()=>{try{await initialized;if(storageDamaged)throw Error('OFFLINE_STORAGE_DAMAGED');await HQOfflineStore.enable();if(await persist()&&state.data)transport.confirmSaved();document.getElementById('offline-enable').hidden=true;status();}catch(_){message('Не удалось подтвердить сохранение локальной копии.');}};
-    document.getElementById('offline-connect').onclick=()=>{message(transport.connect()?'Идёт подключение Google. Дождись подтверждения сохранения дел, затем вернись в Штаб.':'Разреши открытие окна Google и повтори.');};
-    document.getElementById('offline-sync').onclick=()=>void sync();
+    document.getElementById('offline-enable').onclick=async()=>{const button=document.getElementById('offline-enable');button.disabled=true;message('Сохраняем зашифрованную копию…');try{await initialized;if(storageDamaged)throw Error('OFFLINE_STORAGE_DAMAGED');await HQOfflineStore.enable();if(await persist()&&state.data)transport.confirmSaved();button.hidden=true;status();}catch(_){message('Не удалось подтвердить сохранение локальной копии.');}finally{button.disabled=false;}};
+    document.getElementById('offline-connect').onclick=()=>{lastConfirmed=false;retryAfter=0;message(transport.connect()?'Идёт подключение Google. Дождись подтверждения сохранения дел, затем вернись в Штаб.':'Разреши открытие окна Google и повтори.');};
+    document.getElementById('offline-sync').onclick=()=>{
+      if(syncing)return message('Обмен уже выполняется. Дождись ответа Google.');
+      if(!navigator.onLine)return message('Нет сети. Сохранённые дела и очередь доступны на устройстве.');
+      if(!transport.ready())return message('Для отправки нажми «Подключить Google». Сохранённые дела уже доступны.');
+      retryAfter=0;message('Проверяем данные и отправляем очередь…');void sync();
+    };
     document.addEventListener('input',event=>{if(event.target.matches('textarea,input:not([type="search"]):not([type="checkbox"])'))dirty=true;});
     document.getElementById('offline-queue-details').ontoggle=()=>{
       const box=document.getElementById('offline-queue');box.replaceChildren();
