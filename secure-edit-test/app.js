@@ -1,4 +1,4 @@
-/* OFFLINE-SECURE-0.9.4-field-lww-pre (field-by-field last-write-wins merge; compatible encrypted vault 0.9).
+/* OFFLINE-SECURE-0.9.5-journal-download-pre (field-by-field last-write-wins merge; compatible encrypted vault 0.9).
  * A later UTC editedAt wins only for the same case/event and field.
  * Equal timestamps with different values keep the local value and report a tie.
  * Public static app; private snapshots and local drafts are encrypted in IndexedDB.
@@ -690,16 +690,17 @@
         version:1,scope:'TEST_COPY_ONLY',source:'OFFLINE-SECURE-0.9-local-edits-pre',
         requiresOriginalVault:true,encryptedJournal:boxed});
       const name='shtab-local-drafts-'+new Date().toISOString().slice(0,10)+'.shtabchanges.json';
-      const file=new File([content],name,{type:'application/json'});
-      if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
-        await navigator.share({files:[file],title:'Зашифрованный журнал офлайн-правок'});
-      } else {
-        const url=URL.createObjectURL(new Blob([content],{type:'application/json'}));
-        const link=document.createElement('a');link.href=url;link.download=name;
-        document.body.appendChild(link);link.click();link.remove();
+      const url=URL.createObjectURL(new Blob([content],{type:'application/json'}));
+      const link=document.createElement('a');
+      link.href=url;
+      link.download=name;
+      document.body.appendChild(link);
+      try{link.click();}
+      finally{
+        link.remove();
         setTimeout(()=>URL.revokeObjectURL(url),30000);
       }
-      notify('Зашифрованный журнал предложен для сохранения. Для восстановления также потребуется исходный файл копии 0.9 и пароль.','success');
+      notify('Скачивание зашифрованного журнала запрошено. Проверь загрузки браузера.','success');
     }catch(_){notify('Сохранение резервного журнала отменено или не удалось. Локальные правки не удалены.','error');}
     finally{busy=false;}
   }

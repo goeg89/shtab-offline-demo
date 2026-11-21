@@ -1,7 +1,7 @@
-/* OFFLINE-SECURE-0.9.4-field-lww-pre: только статические ресурсы отдельной PWA.
+/* OFFLINE-SECURE-0.9.5-journal-download-pre: только статические ресурсы отдельной PWA.
  * Ни шифротекст пользователя, ни открытые данные, ни URL CRM не кэшируются SW.
  */
-const CACHE='shtab-secure-edit-static-0.9.4-field-lww-1';
+const CACHE='shtab-secure-edit-static-0.9.5-journal-download-1';
 const FILES=['./','./index.html','./styles.css','./app.js','./manifest.webmanifest'];
 self.addEventListener('install', e => e.waitUntil(
   caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting())
