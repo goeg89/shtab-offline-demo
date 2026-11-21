@@ -1,7 +1,7 @@
 /* OFFLINE-SECURE-0.9.5-journal-download-pre: только статические ресурсы отдельной PWA.
  * Ни шифротекст пользователя, ни открытые данные, ни URL CRM не кэшируются SW.
  */
-const CACHE='shtab-synthetic-sync-static-0.10-1';
+const CACHE='shtab-synthetic-sync-static-0.10.1-1';
 const FILES=['./','./index.html','./styles.css','./app.js','./sync-client.js','./manifest.webmanifest'];
 self.addEventListener('install', e => e.waitUntil(
   caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting())

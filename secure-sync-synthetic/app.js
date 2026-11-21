@@ -58,6 +58,7 @@
   let syncWorking=false;
   let lastAcceptedUpload=null;
   let lastUploadHadConflict=false;
+  let serverAccepted=null;
 
   async function syncWhenReady(){
     if(syncWorking||busy||quickView||document.hidden||!navigator.onLine||!cryptoKey||
@@ -65,7 +66,7 @@
     syncWorking=true;
     const current=generation, id=snapshotId, data=snapshot, key=cryptoKey;
     const allowed=item=>item.kind==='case'&&item.id==='CASE-SYNC-TEST-001'&&item.field==='task';
-    const outgoing=journal.filter(allowed);
+    const outgoing=serverAccepted===null?[]:window.ShtabTestSync.pendingChanges(journal.filter(allowed),serverAccepted);
     const encoded=JSON.stringify(outgoing);
     try{
       const round=await window.ShtabTestSync.exchangeJournal({transport:syncTransport,
@@ -80,6 +81,7 @@
           await persistDrafts(combined.merged,key,data,id);
           if(current===generation){journal=combined.merged;render();}
         }
+        serverAccepted=round.updates;
         if(outgoing.length&&encoded!==lastAcceptedUpload){
           lastAcceptedUpload=encoded;
           lastUploadHadConflict=round.results.some(item=>['sheet-changed','timestamp-tie','different-snapshot','protected-formula','record-missing'].includes(item.status));
@@ -769,8 +771,9 @@
   el.restore.addEventListener('click',handleRestore);
   el['sync-connect'].addEventListener('click',()=>{
     if(quickView||snapshotId!==SYNTHETIC_VAULT)return;
+    serverAccepted=null;lastAcceptedUpload=null;lastUploadHadConflict=false;
     el['sync-status'].textContent=syncTransport.connect()
-      ? 'Открыто окно входа Google. После подключения вернись сюда.'
+      ? 'Вернись из окна Google. Если сейф закрылся, открой его снова. Обмен начнётся автоматически.'
       : 'Разреши открытие окна подключения и повтори.';
   });
   window.addEventListener('online',()=>void syncWhenReady());

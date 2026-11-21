@@ -4,6 +4,12 @@
   const protocol = 'shtab-sync-test-v1';
   const frameOrigin = /^https:\/\/[a-z0-9-]+-script\.googleusercontent\.com$/;
 
+  function pendingChanges(local, accepted) {
+    const key = entry => JSON.stringify([entry.kind, entry.id, entry.field, entry.from, entry.to, entry.editedAt]);
+    const known = new Set(accepted.map(key));
+    return local.filter(entry => !known.has(key(entry)));
+  }
+
   function createTransport(host, endpoint) {
     let popup, peer, peerOrigin, nonce, pending;
     function clear(error) {
@@ -73,7 +79,7 @@
     return { ...merge(journal, updates), results };
   }
 
-  const api = { createTransport, exchangeJournal };
+  const api = { createTransport, exchangeJournal, pendingChanges };
   if (typeof module !== 'undefined') module.exports = api;
   else root.ShtabTestSync = api;
 })(typeof window === 'undefined' ? globalThis : window);

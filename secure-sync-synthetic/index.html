@@ -15,7 +15,7 @@
 <body>
 <main>
   <header>
-    <p class="eyebrow">Мои дела · тест синхронизации 0.10</p>
+    <p class="eyebrow">Мои дела · тест синхронизации 0.10.1</p>
     <h1>Офлайн-правки</h1>
     <p>Тестовый экран принимает только вымышленный сейф. После подключения текст тестовой задачи может передаваться в тестовую Google Sheets.</p>
     <div id="sw-status" class="small" role="status">Проверка офлайн-оболочки…</div>
@@ -61,7 +61,7 @@
       <button id="edit-auth-cancel" type="button" class="ghost">Продолжить только просмотр</button>
     </section>
     <div class="stats"><span id="case-count"></span><span id="event-count"></span><span id="draft-count"></span></div>
-    <p class="warning">Это снимок на момент экспорта. Правки <strong>НЕ отправляются</strong> в CRM. Юридические сроки остаются только для чтения. Перед будущим применением потребуется сверка исходных значений и разрешение конфликтов.</p>
+    <p class="warning">При подключении передаётся только текст вымышленной задачи. Принятые правки сохраняются в зашифрованном журнале устройства.</p>
     <div class="switches"><button id="tab-cases" class="active" type="button">Дела</button><button id="tab-events" type="button">Заседания / встречи</button><button id="tab-drafts" type="button">Мои правки</button></div>
     <label for="query">Поиск по офлайн-копии</label>
     <input id="query" type="search" placeholder="Клиент, задача, заседание" autocomplete="off">
@@ -100,7 +100,7 @@
     <button id="cancel-edit" type="button" class="ghost">Отмена</button>
   </section>
   <div id="status" role="status" class="status" aria-live="polite">Ожидается зашифрованная копия 0.9.</div>
-  <footer>OFFLINE-SYNC-0.10-synthetic-pre · проверка одной вымышленной задачи.</footer>
+  <footer>OFFLINE-SYNC-0.10.1-synthetic-pre · проверка одной вымышленной задачи.</footer>
 </main>
 <script src="./sync-client.js" defer></script>
 <script src="./app.js" defer></script>
