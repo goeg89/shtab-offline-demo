@@ -1,6 +1,6 @@
 (function(){
   'use strict';
-  const version='1.0.5';
+  const version='1.1.0';
   const endpoint='https://script.google.com/macros/s/AKfycbzrOJxhfdcZqYDf-Y0fgVkEDOi18WirThrVWApQdXJ5dPYnIuDU2rtQNpu4QknJAeiiDg/exec';
   const transport=HQOfflineTransport.createTransport(window,endpoint);
   let state={data:null,acts:{},queue:[],review:[]},chain=Promise.resolve(),syncing=false,dirty=false,storageDamaged=false,durable=false,lastConfirmed=false,retryAfter=0,connecting=false,connectionTimer;
@@ -37,6 +37,7 @@
     return true;
   }
   function view(){let result=copy(state.data);for(const op of state.queue)result=HQOfflineModel.project(result,op);return result;}
+  function calendarData(){if(state.data)window.dispatchEvent(new CustomEvent('hq-data',{detail:{data:view(),updated:state.lastSyncAt||null}}));}
   function status(){
     if(storageDamaged)return message('Локальная копия не читается. Перезапись остановлена, сохранённые данные оставлены на устройстве.');
     if(state.queue.some(op=>op.status==='conflict'||op.status==='uncertain'))return message('Есть правка, требующая проверки. Открой очередь.');
@@ -85,6 +86,7 @@
         transport.confirmSaved();
       }
       lastConfirmed=true;retryAfter=0;
+      calendarData();
       status();
     });}catch(error){
       console.warn('HQ offline exchange',error.name,error.message);lastConfirmed=false;retryAfter=Date.now()+30000;
@@ -97,7 +99,7 @@
     if(name==='getHeadquartersData'){
       if(!state.data&&transport.ready())await locked(async()=>{if(!state.data){state.data=await transport.exchange({type:'read'});await persist();}});
       if(!state.data)throw Error('Подключи Google для первой загрузки дел.');
-      status();void sync();const data=view();data.newAchievements=[];return data;
+      status();void sync();calendarData();const data=view();data.newAchievements=[];return data;
     }
     if(name==='getActProgressFromHQ'){
       if(transport.ready()&&!syncing)await locked(async()=>{if(!transport.ready())return;try{state.acts[arg]=await transport.exchange({type:'acts',caseId:arg});await persist();}catch(error){console.warn('HQ acts cache',error.message);}});
@@ -114,6 +116,7 @@
       state.queue.push(item);
       try{await persist();}catch(error){state.queue=state.queue.filter(op=>op.id!==id);throw error;}
       dirty=false;
+      calendarData();
       status();setTimeout(()=>void sync(),0);
       if(name==='setCaseFocusFromHQ')return {caseIds:view().focusPinnedCaseIds||[],message:'Выбор сохранён в очереди.'};
       return {ok:true,offline:true,message:'Действие зашифровано и сохранено на устройстве. Ожидает подтверждения таблицы.'};

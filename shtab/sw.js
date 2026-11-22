@@ -1,5 +1,5 @@
-const CACHE='shtab-full-offline-10';
-const FILES=['./','./index.html','./offline-store.js','./offline-model.js','./offline-client.js','./transport.js','./manifest.webmanifest'];
+const CACHE='shtab-full-offline-11';
+const FILES=['./','./index.html','./offline-store.js','./offline-model.js','./offline-client.js','./transport.js','./manifest.webmanifest','./calendar-model.js','./calendar.js','./calendar.css'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES.map(p=>new Request(p,{cache:'reload'})))).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil((async()=>{for(const k of await caches.keys())if(k.startsWith('shtab-full-offline-')&&k!==CACHE)await caches.delete(k);await self.clients.claim();})()));
 self.addEventListener('fetch',e=>{const u=new URL(e.request.url);if(e.request.method!=='GET'||u.origin!==location.origin||!u.pathname.startsWith(new URL(self.registration.scope).pathname))return;e.respondWith(caches.match(e.request,{ignoreSearch:true}).then(r=>r||fetch(e.request)));});
